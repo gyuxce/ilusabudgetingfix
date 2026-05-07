@@ -1,16 +1,18 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { differenceInDays } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { AlertTriangle, AlertCircle } from 'lucide-react';
 import { useInvoices } from '../lib/queries/invoices';
 import { useFreelancerFees } from '../lib/queries/freelancer_fees';
 import { useEngagements } from '../lib/queries/engagements';
-import { currentMonthKey, formatPeriod, getEffectiveStatus } from '../lib/utils';
+import { currentMonthKey, formatPeriod, lastNMonths } from '../lib/utils';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Card } from '../components/ui/Card';
+import { Select } from '../components/ui/Select';
 
 export default function Dashboard() {
   const currentMonth = currentMonthKey();
+  const [periodFilter, setPeriodFilter] = useState('all');
 
   const { data: allInvoices, isLoading: invoicesLoading } = useInvoices();
   const { data: allFees, isLoading: feesLoading } = useFreelancerFees();
@@ -18,8 +20,21 @@ export default function Dashboard() {
 
   const formatCurrency = (val) => new Intl.NumberFormat('id-ID').format(val || 0);
 
+  const filteredInvoices = useMemo(() => {
+    if (!allInvoices) return [];
+    if (periodFilter === 'all') return allInvoices;
+    return allInvoices.filter(inv => inv.period_month === periodFilter);
+  }, [allInvoices, periodFilter]);
+
+  const filteredFees = useMemo(() => {
+    if (!allFees) return [];
+    if (periodFilter === 'all') return allFees;
+    return allFees.filter(fee => fee.period_month === periodFilter);
+  }, [allFees, periodFilter]);
+
   const {
     revenueIssued,
+    revenueIssuedCount,
     revenueReceived,
     revenueReceivedCount,
     outstandingAmount,
@@ -36,61 +51,74 @@ export default function Dashboard() {
     activeEngagements,
     distinctClientsSet,
     topOverdue,
-    topPendingFees
+    topPendingFees,
+    netCashflow
   } = useMemo(() => {
     let _revenueIssued = 0;
+    let _revenueIssuedCount = filteredInvoices.length;
     let _revenueReceived = 0;
     let _revenueReceivedCount = 0;
     let _outstandingAmount = 0;
     let _outstandingCount = 0;
     let _outstandingOverdueCount = 0;
 
+    filteredInvoices.forEach(inv => {
+      const amount = inv.amount || 0;
+      _revenueIssued += amount;
+      
+      const totalPaid = inv.total_paid || 0;
+      if (totalPaid > 0) {
+        _revenueReceived += totalPaid;
+        if (inv.computed_status === 'paid') {
+          _revenueReceivedCount++;
+        }
+      }
+
+      if (inv.computed_status === 'sent' || inv.computed_status === 'partial') {
+        _outstandingAmount += inv.balance || 0;
+        _outstandingCount++;
+      } else if (inv.computed_status === 'overdue') {
+        _outstandingAmount += inv.balance || 0;
+        _outstandingCount++;
+        _outstandingOverdueCount++;
+      }
+    });
+
     let _feesTotalAmount = 0;
-    let _feesTotalCount = 0;
+    let _feesTotalCount = filteredFees.length;
     let _feesPaidAmount = 0;
     let _feesPendingAmount = 0;
 
+    filteredFees.forEach(fee => {
+      const amount = fee.calculated_fee || 0;
+      _feesTotalAmount += amount;
+      if (fee.status === 'paid') _feesPaidAmount += amount;
+      else _feesPendingAmount += amount;
+    });
+
+    let cashIn = 0;
+    let cashOut = 0;
     let _allOverdueInvoices = [];
     let _totalOverdueAmount = 0;
 
     if (allInvoices) {
       allInvoices.forEach(inv => {
-        const effStatus = getEffectiveStatus(inv);
-        const amount = inv.amount || 0;
-        
-        // Globals (for all time)
-        if (effStatus === 'overdue') {
-          _allOverdueInvoices.push(inv);
-          _totalOverdueAmount += amount;
-        }
+        cashIn += (inv.total_paid || 0);
 
-        // Current Month Specifics
-        if (inv.period_month === currentMonth) {
-          _revenueIssued += amount;
-          if (effStatus === 'paid') {
-            _revenueReceived += amount;
-            _revenueReceivedCount++;
-          } else {
-            _outstandingAmount += amount;
-            _outstandingCount++;
-            if (effStatus === 'overdue') _outstandingOverdueCount++;
-          }
+        if (inv.computed_status === 'overdue') {
+          _allOverdueInvoices.push(inv);
+          _totalOverdueAmount += (inv.balance || 0);
         }
       });
     }
 
     if (allFees) {
       allFees.forEach(fee => {
-        if (fee.period_month === currentMonth) {
-          const amount = fee.calculated_fee || 0;
-          _feesTotalAmount += amount;
-          _feesTotalCount++;
-          if (fee.status === 'paid') _feesPaidAmount += amount;
-          else _feesPendingAmount += amount;
-        }
+        if (fee.status === 'paid') cashOut += (fee.calculated_fee || 0);
       });
     }
 
+    const _netCashflow = { cashIn, cashOut, net: cashIn - cashOut };
     const _profitCash = _revenueReceived - _feesPaidAmount;
 
     _allOverdueInvoices.sort((a,b) => new Date(a.due_date) - new Date(b.due_date));
@@ -104,6 +132,7 @@ export default function Dashboard() {
 
     return {
       revenueIssued: _revenueIssued,
+      revenueIssuedCount: _revenueIssuedCount,
       revenueReceived: _revenueReceived,
       revenueReceivedCount: _revenueReceivedCount,
       outstandingAmount: _outstandingAmount,
@@ -120,9 +149,10 @@ export default function Dashboard() {
       activeEngagements: _activeEngagements,
       distinctClientsSet: _distinctClientsSet,
       topOverdue: _topOverdue,
-      topPendingFees: _topPendingFees
+      topPendingFees: _topPendingFees,
+      netCashflow: _netCashflow
     };
-  }, [allInvoices, allFees, allEngagements, currentMonth]);
+  }, [allInvoices, allFees, allEngagements, filteredInvoices, filteredFees]);
 
   if (invoicesLoading || feesLoading || engLoading) {
     return (
@@ -151,7 +181,7 @@ export default function Dashboard() {
         <div>
           <h3 className="text-sm font-semibold text-red-900">Cashflow Gap Warning</h3>
           <p className="text-sm text-red-700 mt-1">
-            You have Rp {formatCurrency(feesPendingAmount)} in unpaid freelancer fees but only Rp {formatCurrency(revenueReceived)} received from clients this month. Gap: Rp {formatCurrency(gap)}.
+            You have Rp {formatCurrency(feesPendingAmount)} in unpaid freelancer fees but only Rp {formatCurrency(revenueReceived)} received from clients {periodFilter === 'all' ? 'All Time' : formatPeriod(periodFilter)}. Gap: Rp {formatCurrency(gap)}.
           </p>
         </div>
       </div>
@@ -174,43 +204,83 @@ export default function Dashboard() {
     <>
       <PageHeader 
         title="Dashboard" 
-        description={`Overview for ${formatPeriod(currentMonth)}`}
+        description={periodFilter === 'all' ? "Cumulative overview across all months" : `Overview for ${formatPeriod(periodFilter)}`}
+        action={
+          <Select 
+            value={periodFilter} 
+            onChange={e => setPeriodFilter(e.target.value)}
+            options={[
+              { value: 'all', label: 'All Time' },
+              ...lastNMonths(24)
+            ]}
+            className="w-48 bg-white"
+          />
+        }
       />
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
-          <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Revenue (Issued)</p>
+          <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">REVENUE ISSUED</p>
           <div className="text-2xl font-semibold tracking-tight text-gray-900 leading-tight">Rp {formatCurrency(revenueIssued)}</div>
-          <p className="text-xs text-gray-500 mt-1">{currentMonthInvoicesCount(allInvoices, currentMonth)} invoices</p>
+          <p className="text-xs text-gray-500 mt-1">{revenueIssuedCount} invoices</p>
         </div>
 
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
-          <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Revenue Received</p>
+          <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">REVENUE RECEIVED</p>
           <div className="text-2xl font-semibold tracking-tight text-emerald-600 leading-tight">Rp {formatCurrency(revenueReceived)}</div>
           <p className="text-xs text-gray-500 mt-1">{revenueReceivedCount} paid</p>
         </div>
 
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
-          <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Outstanding</p>
-          <div className={`text-2xl font-semibold tracking-tight leading-tight ${outstandingOverdueCount > 0 ? 'text-red-600' : (outstandingAmount > 0 ? 'text-amber-600' : 'text-gray-400')}`}>
+          <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">OUTSTANDING</p>
+          <div className={`text-2xl font-semibold tracking-tight leading-tight ${outstandingOverdueCount > 0 ? 'text-amber-600' : (outstandingAmount > 0 ? 'text-amber-600' : 'text-gray-400')}`}>
             Rp {formatCurrency(outstandingAmount)}
           </div>
           <p className="text-xs text-gray-500 mt-1">{outstandingCount} unpaid, {outstandingOverdueCount} overdue</p>
         </div>
 
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
-          <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Profit (Cash)</p>
+          <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">PROFIT (CASH)</p>
           <div className={`text-2xl font-semibold tracking-tight leading-tight ${profitCash > 0 ? 'text-emerald-600' : (profitCash < 0 ? 'text-red-600' : 'text-gray-900')}`}>
             {profitCash < 0 ? '-' : ''}Rp {formatCurrency(Math.abs(profitCash))}
           </div>
-          <p className="text-xs text-gray-500 mt-1">Received - Paid fees</p>
+          <p className="text-xs text-gray-500 mt-1 flex flex-col sm:flex-row gap-1">Received - Paid fees <span className="italic">(within selected period)</span></p>
         </div>
+      </div>
+
+      <div className="bg-gradient-to-b from-emerald-50 to-white border border-emerald-200 rounded-lg p-6 mb-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          💰 Net Cashflow (All Time)
+        </h2>
+        <div className="border-t border-emerald-100 mb-6"></div>
+        <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-emerald-100/50">
+          <div className="px-4 py-2 text-center md:text-left">
+            <p className="text-xs text-gray-500 font-semibold tracking-wide uppercase mb-1">CASH IN</p>
+            <p className="text-2xl font-bold text-emerald-600">Rp {formatCurrency(netCashflow.cashIn)}</p>
+            <p className="text-xs text-gray-500 mt-2">All paid invoices</p>
+          </div>
+          <div className="px-4 py-2 text-center md:text-left">
+            <p className="text-xs text-gray-500 font-semibold tracking-wide uppercase mb-1">CASH OUT</p>
+            <p className="text-2xl font-bold text-red-600">Rp {formatCurrency(netCashflow.cashOut)}</p>
+            <p className="text-xs text-gray-500 mt-2">All paid fees</p>
+          </div>
+          <div className="px-4 py-2 text-center md:text-right">
+            <p className="text-xs text-gray-500 font-semibold tracking-wide uppercase mb-1">NET POSITION</p>
+            <p className={`text-3xl font-extrabold ${netCashflow.net > 0 ? 'text-emerald-700' : (netCashflow.net < 0 ? 'text-red-600' : 'text-gray-700')}`}>
+              {netCashflow.net < 0 ? '-' : ''}Rp {formatCurrency(Math.abs(netCashflow.net))}
+            </p>
+            <p className="text-xs text-gray-500 mt-2">Money in pocket</p>
+          </div>
+        </div>
+        <p className="text-xs text-center text-emerald-700/80 mt-6 pt-4 border-t border-emerald-100/50">
+          This is your real cash position — independent of the filter above
+        </p>
       </div>
 
       {alertElement}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <Card title="Freelancer Fees This Month">
+        <Card title={`Freelancer Fees — ${periodFilter === 'all' ? 'All Time' : formatPeriod(periodFilter)}`}>
           <div className="flex flex-wrap gap-6 pt-1">
             <div>
               <p className="text-xs text-gray-500 mb-1">Total ({feesTotalCount})</p>
@@ -253,9 +323,9 @@ export default function Dashboard() {
                       <p className="text-xs text-gray-500">{inv.engagement?.service?.name} · {formatPeriod(inv.period_month)}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-medium text-red-600">Rp {formatCurrency(inv.amount)}</p>
+                      <p className="text-sm font-medium text-red-600">Rp {formatCurrency(inv.balance)} outstanding</p>
                       <p className="text-xs text-red-600 bg-red-50 inline-block px-1.5 py-0.5 rounded mt-0.5">
-                        {differenceInDays(new Date(), new Date(inv.due_date))} days
+                        {differenceInDays(new Date(), new Date(inv.due_date))} days overdue
                       </p>
                     </div>
                   </div>
@@ -293,9 +363,4 @@ export default function Dashboard() {
       </div>
     </>
   );
-}
-
-function currentMonthInvoicesCount(allInvoices, currentMonth) {
-  if (!allInvoices) return 0;
-  return allInvoices.filter(i => i.period_month === currentMonth).length;
 }

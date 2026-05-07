@@ -1,11 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../supabase';
 
-export function useFreelancerFees(filters = {}) {
+export function useFreelancerFees() {
   return useQuery({
-    queryKey: ['freelancer_fees', filters],
+    queryKey: ['freelancer_fees'],
     queryFn: async () => {
-      let query = supabase
+      const { data, error } = await supabase
         .from('freelancer_fees')
         .select(`
           *,
@@ -14,24 +14,8 @@ export function useFreelancerFees(filters = {}) {
         `)
         .order('period_month', { ascending: false });
 
-      if (filters.period_month) {
-        query = query.eq('period_month', filters.period_month);
-      }
-      if (filters.status) {
-        query = query.eq('status', filters.status);
-      }
-      if (filters.freelancer_id) {
-        query = query.eq('freelancer_id', filters.freelancer_id);
-      }
-
-      const { data, error } = await query;
       if (error) throw new Error(error.message);
-
-      let result = data;
-      if (filters.engagement_id) {
-        result = result.filter(fee => fee.engagement?.id === filters.engagement_id);
-      }
-      return result;
+      return data;
     }
   });
 }

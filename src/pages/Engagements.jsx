@@ -26,8 +26,8 @@ export default function Engagements() {
   const deleteEngagement = useDeleteEngagement();
 
   const [search, setSearch] = useState('');
-  const [filterStatus, setFilterStatus] = useState('');
-  const [filterClient, setFilterClient] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterClient, setFilterClient] = useState('all');
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
@@ -61,11 +61,11 @@ export default function Engagements() {
       );
     }
 
-    if (filterStatus) {
+    if (filterStatus && filterStatus !== 'all') {
       filtered = filtered.filter(eng => eng.status === filterStatus);
     }
 
-    if (filterClient) {
+    if (filterClient && filterClient !== 'all') {
       filtered = filtered.filter(eng => eng.client_id === filterClient);
     }
 
@@ -229,7 +229,7 @@ export default function Engagements() {
         }
       />
 
-      {engagements?.length === 0 && !search && !filterStatus && !filterClient ? (
+      {engagements?.length === 0 && !search && filterStatus === 'all' && filterClient === 'all' ? (
         <EmptyState 
           icon={Briefcase} 
           title="No engagements yet" 
@@ -252,7 +252,7 @@ export default function Engagements() {
               value={filterStatus}
               onChange={e => setFilterStatus(e.target.value)}
               options={[
-                { value: '', label: 'All statuses' },
+                { value: 'all', label: 'All statuses' },
                 { value: 'ongoing', label: 'Ongoing' },
                 { value: 'finished', label: 'Finished' },
                 { value: 'hold', label: 'On Hold' }
@@ -263,12 +263,18 @@ export default function Engagements() {
               value={filterClient}
               onChange={e => setFilterClient(e.target.value)}
               options={[
-                { value: '', label: 'All clients' },
+                { value: 'all', label: 'All clients' },
                 ...(clients?.map(c => ({ value: c.id, label: c.company_name })) || [])
               ]}
               className="w-56"
             />
           </div>
+
+          {engagements && (
+            <p className="text-xs text-gray-500 mb-2 block">
+              Showing {filteredEngagements.length} of {engagements.length} entries
+            </p>
+          )}
 
           <DataTable 
             columns={columns} 
@@ -342,7 +348,7 @@ export default function Engagements() {
               onChange={e => setFormData({...formData, service_id: e.target.value})}
               options={[
                 { value: '', label: 'Select service...' },
-                ...(services?.map(s => ({ value: s.id, label: `${s.name} (${s.service_type === 'monthly' ? 'monthly' : 'one-time'})` })) || [])
+                ...(services?.map(s => ({ value: s.id, label: `${s.name} (${s.service_type === 'monthly' ? 'Monthly' : 'One-time'})` })) || [])
               ]}
             />
           </div>

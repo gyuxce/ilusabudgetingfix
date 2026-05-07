@@ -27,19 +27,31 @@ export default function Fees() {
   const { data: freelancers } = useFreelancers();
   const { data: engagements } = useEngagements();
 
-  const [filterPeriod, setFilterPeriod] = useState(currentMonthKey());
-  const [filterStatus, setFilterStatus] = useState('');
-  const [filterFreelancer, setFilterFreelancer] = useState('');
-  const [filterEngagement, setFilterEngagement] = useState('');
+  const [filterPeriod, setFilterPeriod] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterFreelancer, setFilterFreelancer] = useState('all');
+  const [filterEngagement, setFilterEngagement] = useState('all');
 
-  const tableFilters = {};
-  if (filterPeriod) tableFilters.period_month = filterPeriod;
-  if (filterStatus) tableFilters.status = filterStatus;
-  if (filterFreelancer) tableFilters.freelancer_id = filterFreelancer;
-  if (filterEngagement) tableFilters.engagement_id = filterEngagement;
+  const { data: fees, isLoading: tableLoading } = useFreelancerFees();
 
-  const { data: summaryFees } = useFreelancerFees({ period_month: currentMonthKey() });
-  const { data: tableFees, isLoading: tableLoading } = useFreelancerFees(tableFilters);
+  const filteredRows = useMemo(() => {
+    if (!fees) return [];
+    return fees.filter(row => {
+      if (filterPeriod && filterPeriod !== 'all' && row.period_month !== filterPeriod) {
+        return false;
+      }
+      if (filterStatus && filterStatus !== 'all' && row.status !== filterStatus) {
+        return false;
+      }
+      if (filterFreelancer && filterFreelancer !== 'all' && row.freelancer_id !== filterFreelancer) {
+        return false;
+      }
+      if (filterEngagement && filterEngagement !== 'all' && row.engagement_id !== filterEngagement) {
+        return false;
+      }
+      return true;
+    });
+  }, [fees, filterPeriod, filterStatus, filterFreelancer, filterEngagement]);
 
   const createFee = useCreateFreelancerFee();
   const updateFee = useUpdateFreelancerFee();
@@ -69,42 +81,46 @@ export default function Fees() {
     qty_carousel: 0,
     rate_reels: 0,
     qty_reels: 0,
+    fixed_amount: 0,
     status: 'pending',
     paid_date: todayStr,
     notes: ''
   });
   const [formError, setFormError] = useState('');
 
-  const summaryData = useMemo(() => {
-    let totalAmt = 0, totalCount = 0;
-    let paidAmt = 0, paidCount = 0;
-    let pendingAmt = 0, pendingCount = 0;
-    if (summaryFees) {
-      summaryFees.forEach(fee => {
-        const amt = fee.calculated_fee || 0;
-        totalAmt += amt;
-        totalCount++;
-        if (fee.status === 'paid') {
-          paidAmt += amt;
-          paidCount++;
-        } else {
-          pendingAmt += amt;
-          pendingCount++;
-        }
-      });
-    }
-    return { totalAmt, totalCount, paidAmt, paidCount, pendingAmt, pendingCount };
-  }, [summaryFees]);
+  const cardsBase = useMemo(() => {
+    if (!fees) return [];
+    if (!filterPeriod || filterPeriod === 'all') return fees;
+    return fees.filter(r => r.period_month === filterPeriod);
+  }, [fees, filterPeriod]);
+
+  const cardTotals = useMemo(() => {
+    const totalAmt = cardsBase.reduce((sum, r) => sum + (r.calculated_fee || 0), 0);
+    const paidAmt = cardsBase
+      .filter(r => r.status === 'paid')
+      .reduce((sum, r) => sum + (r.calculated_fee || 0), 0);
+    const pendingAmt = cardsBase
+      .filter(r => r.status === 'pending')
+      .reduce((sum, r) => sum + (r.calculated_fee || 0), 0);
+    
+    const totalCount = cardsBase.length;
+    const paidCount = cardsBase.filter(r => r.status === 'paid').length;
+    const pendingCount = cardsBase.filter(r => r.status === 'pending').length;
+    
+    return { totalAmt, paidAmt, pendingAmt, totalCount, paidCount, pendingCount };
+  }, [cardsBase]);
 
   const liveFee = useMemo(() => {
     if (formData.fee_type === 'hourly') {
       return (parseFloat(formData.hourly_rate) || 0) * 
              (parseFloat(formData.hours_per_day) || 0) * 
              ((parseFloat(formData.working_days) || 0) - (parseFloat(formData.off_days) || 0));
-    } else {
+    } else if (formData.fee_type === 'per_content') {
       return ((parseFloat(formData.rate_single_post) || 0) * (parseFloat(formData.qty_single_post) || 0)) +
              ((parseFloat(formData.rate_carousel) || 0) * (parseFloat(formData.qty_carousel) || 0)) +
              ((parseFloat(formData.rate_reels) || 0) * (parseFloat(formData.qty_reels) || 0));
+    } else {
+      return parseFloat(formData.fixed_amount) || 0;
     }
   }, [formData]);
 
@@ -127,6 +143,7 @@ export default function Fees() {
       qty_carousel: 0,
       rate_reels: 0,
       qty_reels: 0,
+      fixed_amount: 0,
       status: 'pending',
       paid_date: todayStr,
       notes: ''
@@ -153,6 +170,7 @@ export default function Fees() {
       qty_carousel: fee.qty_carousel ?? 0,
       rate_reels: fee.rate_reels ?? 0,
       qty_reels: fee.qty_reels ?? 0,
+      fixed_amount: fee.fixed_amount ?? 0,
       status: fee.status || 'pending',
       paid_date: fee.paid_date || todayStr,
       notes: fee.notes || ''
@@ -190,9 +208,14 @@ export default function Fees() {
         setFormError('Hourly rate, hours per day, and working days must be greater than zero.');
         return;
       }
-    } else {
+    } else if (formData.fee_type === 'per_content') {
       if (liveFee <= 0) {
         setFormError('At least one content quantity paired with a positive rate must be provided to result in a fee > 0.');
+        return;
+      }
+    } else if (formData.fee_type === 'fixed') {
+      if (parseFloat(formData.fixed_amount) <= 0) {
+        setFormError('Fixed amount must be greater than zero.');
         return;
       }
     }
@@ -217,7 +240,8 @@ export default function Fees() {
         payload.rate_single_post = null; payload.qty_single_post = null;
         payload.rate_carousel = null; payload.qty_carousel = null;
         payload.rate_reels = null; payload.qty_reels = null;
-      } else {
+        payload.fixed_amount = null;
+      } else if (formData.fee_type === 'per_content') {
         payload.hourly_rate = null; payload.hours_per_day = null;
         payload.working_days = null; payload.off_days = null;
 
@@ -227,6 +251,16 @@ export default function Fees() {
         payload.qty_carousel = parseFloat(formData.qty_carousel) || 0;
         payload.rate_reels = parseFloat(formData.rate_reels) || 0;
         payload.qty_reels = parseFloat(formData.qty_reels) || 0;
+        payload.fixed_amount = null;
+      } else if (formData.fee_type === 'fixed') {
+        payload.hourly_rate = null; payload.hours_per_day = null;
+        payload.working_days = null; payload.off_days = null;
+        
+        payload.rate_single_post = null; payload.qty_single_post = null;
+        payload.rate_carousel = null; payload.qty_carousel = null;
+        payload.rate_reels = null; payload.qty_reels = null;
+        
+        payload.fixed_amount = parseFloat(formData.fixed_amount) || 0;
       }
 
       if (editingFee) {
@@ -256,11 +290,13 @@ export default function Fees() {
     )},
     { key: 'period', label: 'Period', render: (row) => formatPeriod(row.period_month) },
     { key: 'type', label: 'Type', render: (row) => (
-      <Badge variant="neutral">{row.fee_type === 'hourly' ? 'Hourly' : 'Per Content'}</Badge>
+      <Badge variant="neutral">{row.fee_type === 'hourly' ? 'Hourly' : row.fee_type === 'fixed' ? 'Fixed' : 'Per Content'}</Badge>
     )},
     { key: 'calculation', label: 'Calculation', render: (row) => {
       if (row.fee_type === 'hourly') {
         return <span className="text-xs text-gray-500">{formatCurrency(row.hourly_rate)} × {row.hours_per_day}h × {row.working_days - (row.off_days || 0)}d</span>;
+      } else if (row.fee_type === 'fixed') {
+        return <span className="text-xs text-gray-500">Fixed amount</span>;
       }
       return <span className="text-xs text-gray-500">{row.qty_single_post || 0}p + {row.qty_carousel || 0}c + {row.qty_reels || 0}r</span>;
     }},
@@ -318,21 +354,27 @@ export default function Fees() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <Card className="!p-4">
-          <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Total Fees This Month</p>
-          <div className="text-2xl font-semibold tracking-tight text-gray-900 leading-tight">Rp {formatCurrency(summaryData.totalAmt)}</div>
-          <p className="text-xs text-gray-500 mt-1">{summaryData.totalCount} entries</p>
+          <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">
+            Total Fees {(!filterPeriod || filterPeriod === 'all') ? '(All Time)' : `— ${formatPeriod(filterPeriod)}`}
+          </p>
+          <div className="text-2xl font-semibold tracking-tight text-gray-900 leading-tight">Rp {formatCurrency(cardTotals.totalAmt)}</div>
+          <p className="text-xs text-gray-500 mt-1">{cardTotals.totalCount} entries</p>
         </Card>
         <Card className="!p-4">
-          <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Paid</p>
-          <div className="text-2xl font-semibold tracking-tight text-emerald-600 leading-tight">Rp {formatCurrency(summaryData.paidAmt)}</div>
-          <p className="text-xs text-gray-500 mt-1">{summaryData.paidCount} paid</p>
+          <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">
+            Paid {(!filterPeriod || filterPeriod === 'all') ? '(All Time)' : `— ${formatPeriod(filterPeriod)}`}
+          </p>
+          <div className="text-2xl font-semibold tracking-tight text-emerald-600 leading-tight">Rp {formatCurrency(cardTotals.paidAmt)}</div>
+          <p className="text-xs text-gray-500 mt-1">{cardTotals.paidCount} paid</p>
         </Card>
         <Card className="!p-4">
-          <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Pending</p>
-          <div className={`text-2xl font-semibold tracking-tight leading-tight ${summaryData.pendingAmt > 0 ? 'text-amber-600' : 'text-gray-400'}`}>
-            Rp {formatCurrency(summaryData.pendingAmt)}
+          <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">
+            Pending {(!filterPeriod || filterPeriod === 'all') ? '(All Time)' : `— ${formatPeriod(filterPeriod)}`}
+          </p>
+          <div className={`text-2xl font-semibold tracking-tight leading-tight ${cardTotals.pendingAmt > 0 ? 'text-amber-600' : 'text-gray-400'}`}>
+            Rp {formatCurrency(cardTotals.pendingAmt)}
           </div>
-          <p className="text-xs text-gray-500 mt-1">{summaryData.pendingCount} pending</p>
+          <p className="text-xs text-gray-500 mt-1">{cardTotals.pendingCount} pending</p>
         </Card>
       </div>
 
@@ -341,7 +383,7 @@ export default function Fees() {
           value={filterPeriod}
           onChange={e => setFilterPeriod(e.target.value)}
           options={[
-            { value: '', label: 'All months' },
+            { value: 'all', label: 'All months' },
             ...lastNMonths(12)
           ]}
           className="w-48"
@@ -350,7 +392,7 @@ export default function Fees() {
           value={filterStatus}
           onChange={e => setFilterStatus(e.target.value)}
           options={[
-            { value: '', label: 'All statuses' },
+            { value: 'all', label: 'All statuses' },
             { value: 'pending', label: 'Pending' },
             { value: 'paid', label: 'Paid' }
           ]}
@@ -360,7 +402,7 @@ export default function Fees() {
           value={filterFreelancer}
           onChange={e => setFilterFreelancer(e.target.value)}
           options={[
-            { value: '', label: 'All freelancers' },
+            { value: 'all', label: 'All freelancers' },
             ...(freelancers?.map(f => ({ value: f.id, label: f.name })) || [])
           ]}
           className="w-48"
@@ -369,14 +411,20 @@ export default function Fees() {
           value={filterEngagement}
           onChange={e => setFilterEngagement(e.target.value)}
           options={[
-            { value: '', label: 'All engagements' },
+            { value: 'all', label: 'All engagements' },
             ...(engagements?.map(e => ({ value: e.id, label: `${e.client?.company_name} - ${e.service?.name}` })) || [])
           ]}
           className="w-56"
         />
       </div>
 
-      {tableFees?.length === 0 && !filterEngagement && !filterFreelancer && !filterStatus && !filterPeriod ? (
+      {fees && (
+        <p className="text-xs text-gray-500 mb-4 block">
+          Showing {filteredRows.length} of {fees.length} entries
+        </p>
+      )}
+
+      {filteredRows.length === 0 && filterEngagement === 'all' && filterFreelancer === 'all' && filterStatus === 'all' && filterPeriod === 'all' ? (
         <EmptyState 
           icon={Wallet} 
           title="No fee entries yet" 
@@ -386,7 +434,7 @@ export default function Fees() {
       ) : (
         <DataTable 
           columns={columns} 
-          rows={tableFees || []} 
+          rows={filteredRows} 
           onRowClick={(row) => handleOpenEdit(row)}
           emptyMessage="No fee entries match your filters"
         />
@@ -452,7 +500,8 @@ export default function Fees() {
               onChange={e => setFormData({...formData, fee_type: e.target.value})}
               options={[
                 { value: 'hourly', label: 'Hourly Rate' },
-                { value: 'per_content', label: 'Per Content' }
+                { value: 'per_content', label: 'Per Content' },
+                { value: 'fixed', label: 'Fixed Amount' }
               ]}
             />
           </div>
@@ -465,7 +514,7 @@ export default function Fees() {
                 <Input label="Working Days *" type="number" min="0" required value={formData.working_days} onChange={e => setFormData({...formData, working_days: e.target.value})} />
                 <Input label="Off Days" type="number" min="0" value={formData.off_days} onChange={e => setFormData({...formData, off_days: e.target.value})} />
               </div>
-            ) : (
+            ) : formData.fee_type === 'per_content' ? (
               <div className="grid grid-cols-2 gap-4">
                 <Input label="Rate Single Post" type="number" min="0" value={formData.rate_single_post} onChange={e => setFormData({...formData, rate_single_post: e.target.value})} />
                 <Input label="Qty Single Post" type="number" min="0" value={formData.qty_single_post} onChange={e => setFormData({...formData, qty_single_post: e.target.value})} />
@@ -473,6 +522,11 @@ export default function Fees() {
                 <Input label="Qty Carousel" type="number" min="0" value={formData.qty_carousel} onChange={e => setFormData({...formData, qty_carousel: e.target.value})} />
                 <Input label="Rate Reels" type="number" min="0" value={formData.rate_reels} onChange={e => setFormData({...formData, rate_reels: e.target.value})} />
                 <Input label="Qty Reels" type="number" min="0" value={formData.qty_reels} onChange={e => setFormData({...formData, qty_reels: e.target.value})} />
+              </div>
+            ) : (
+              <div>
+                <Input label="Fixed Amount *" type="number" min="0" required value={formData.fixed_amount} onChange={e => setFormData({...formData, fixed_amount: e.target.value})} />
+                <p className="text-xs text-gray-500 mt-1">Enter the agreed flat fee in Rupiah</p>
               </div>
             )}
           </div>
@@ -483,7 +537,9 @@ export default function Fees() {
             <p className="text-xs text-emerald-600/80 mt-1 font-mono">
               {formData.fee_type === 'hourly' 
                 ? `${formatCurrency(formData.hourly_rate || 0)} × ${formData.hours_per_day || 0} × (${formData.working_days || 0} - ${formData.off_days || 0}) = Rp ${formatCurrency(Math.max(0, liveFee))}` 
-                : `${formData.qty_single_post || 0}p + ${formData.qty_carousel || 0}c + ${formData.qty_reels || 0}r = Rp ${formatCurrency(Math.max(0, liveFee))}`
+                : formData.fee_type === 'per_content' 
+                ? `${formData.qty_single_post || 0}p + ${formData.qty_carousel || 0}c + ${formData.qty_reels || 0}r = Rp ${formatCurrency(Math.max(0, liveFee))}`
+                : `Fixed amount (no calculation)`
               }
             </p>
           </div>
@@ -541,7 +597,7 @@ export default function Fees() {
         <p className="text-sm text-gray-600">
           Delete this fee entry for {
             (() => {
-              const fee = tableFees?.find(i => i.id === deleteId);
+              const fee = fees?.find(i => i.id === deleteId);
               if (!fee) return '';
               return <strong>{fee.freelancer?.name} - {formatPeriod(fee.period_month)}</strong>;
             })()

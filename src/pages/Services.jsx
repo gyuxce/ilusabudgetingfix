@@ -71,7 +71,11 @@ export default function Services() {
       }
       setIsModalOpen(false);
     } catch (err) {
-      setFormError(err.message);
+      if (err.message.includes('unique constraint') || err.message.includes('services_name_service_type_key') || err.message.includes('already exists') || err.message.includes('duplicate key value')) {
+        setFormError('A service with this name and type already exists. Try different name or type.');
+      } else {
+        setFormError(err.message);
+      }
     }
   };
 
@@ -184,12 +188,17 @@ export default function Services() {
               {formError}
             </div>
           )}
-          <Input 
-            label="Name" 
-            required 
-            value={formData.name}
-            onChange={e => setFormData({...formData, name: e.target.value})}
-          />
+          <div>
+            <Input 
+              label="Name" 
+              required 
+              value={formData.name}
+              onChange={e => setFormData({...formData, name: e.target.value})}
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              You can have same name with different Service Type (e.g. Digital Marketing/Monthly + Digital Marketing/One-time)
+            </p>
+          </div>
           <Select 
             label="Service Type" 
             value={formData.service_type}

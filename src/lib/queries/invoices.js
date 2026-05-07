@@ -1,12 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../supabase';
 
-export function useInvoices(filters = {}) {
+export function useInvoices() {
   return useQuery({
-    queryKey: ['invoices', filters],
+    queryKey: ['invoices'],
     queryFn: async () => {
-      let query = supabase
-        .from('invoices')
+      const { data, error } = await supabase
+        .from('invoices_with_payments')
         .select(`
           *, 
           engagement:engagements(
@@ -18,28 +18,8 @@ export function useInvoices(filters = {}) {
         `)
         .order('due_date', { ascending: false });
 
-      if (filters.period_month) {
-        query = query.eq('period_month', filters.period_month);
-      }
-      if (filters.status) {
-        if (filters.status === 'overdue') {
-          const today = new Date().toISOString().split('T')[0];
-          query = query.eq('status', 'sent').lt('due_date', today);
-        } else {
-          query = query.eq('status', filters.status);
-        }
-      }
-
-      const { data, error } = await query;
       if (error) throw new Error(error.message);
-
-      let result = data;
-      // Client-side filter for client_id since it's nested
-      if (filters.client_id) {
-        result = result.filter(inv => inv.engagement?.client?.id === filters.client_id);
-      }
-
-      return result;
+      return data;
     }
   });
 }
@@ -50,7 +30,7 @@ export function useInvoice(id) {
     queryFn: async () => {
       if (!id) return null;
       const { data, error } = await supabase
-        .from('invoices')
+        .from('invoices_with_payments')
         .select('*, engagement:engagements(id, service_fee_per_month, client:clients(id, company_name), service:services(id, name))')
         .eq('id', id)
         .single();
@@ -128,45 +108,6 @@ export function useDeleteInvoice() {
         .eq('id', id);
       if (error) throw new Error(error.message);
       return true;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['invoices'] });
-    }
-  });
-}
-
-export function useMarkInvoicePaid() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (id) => {
-      const today = new Date().toISOString().split('T')[0];
-      const { data, error } = await supabase
-        .from('invoices')
-        .update({ status: 'paid', paid_date: today })
-        .eq('id', id)
-        .select()
-        .single();
-      if (error) throw new Error(error.message);
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['invoices'] });
-    }
-  });
-}
-
-export function useMarkInvoiceUnpaid() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (id) => {
-      const { data, error } = await supabase
-        .from('invoices')
-        .update({ status: 'sent', paid_date: null })
-        .eq('id', id)
-        .select()
-        .single();
-      if (error) throw new Error(error.message);
-      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] });

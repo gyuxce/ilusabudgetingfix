@@ -1,10 +1,10 @@
 import { useState, useMemo } from 'react';
-import { FileText, Plus, Calendar, Pencil, Trash2, Check, Undo2, Search } from 'lucide-react';
+import { FileText, Plus, Calendar, Pencil, Trash2, CreditCard, Search } from 'lucide-react';
 import { format } from 'date-fns';
-import { useInvoices, useCreateInvoice, useCreateInvoicesBulk, useUpdateInvoice, useDeleteInvoice, useMarkInvoicePaid, useMarkInvoiceUnpaid } from '../lib/queries/invoices';
+import { useInvoices, useCreateInvoice, useCreateInvoicesBulk, useUpdateInvoice, useDeleteInvoice } from '../lib/queries/invoices';
 import { useEngagements } from '../lib/queries/engagements';
 import { useClients } from '../lib/queries/clients';
-import { getEffectiveStatus, currentMonthKey, formatPeriod, lastNMonths } from '../lib/utils';
+import { currentMonthKey, formatPeriod, lastNMonths } from '../lib/utils';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
@@ -15,37 +15,34 @@ import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
 import { Textarea } from '../components/ui/Textarea';
 import { Badge } from '../components/ui/Badge';
+import { InvoiceDetailModal } from '../components/InvoiceDetailModal';
+import { RecordPaymentModal } from '../components/RecordPaymentModal';
 
 export default function Invoices() {
   const { data: clients } = useClients();
   const { data: engagements } = useEngagements();
 
   const [search, setSearch] = useState('');
-  const [filterPeriod, setFilterPeriod] = useState(currentMonthKey());
-  const [filterStatus, setFilterStatus] = useState('');
-  const [filterClient, setFilterClient] = useState('');
+  const [filterPeriod, setFilterPeriod] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterClient, setFilterClient] = useState('all');
 
-  const tableFilters = {};
-  if (filterPeriod) tableFilters.period_month = filterPeriod;
-  if (filterStatus) tableFilters.status = filterStatus;
-  if (filterClient) tableFilters.client_id = filterClient;
-
-  // Separate queries: one for summary (always current month), one for table (affected by filters)
-  const { data: summaryInvoices } = useInvoices({ period_month: currentMonthKey() });
-  const { data: tableInvoices, isLoading: tableLoading } = useInvoices(tableFilters);
+  // One query for all invoices (summary + table)
+  const { data: invoices, isLoading: tableLoading } = useInvoices();
 
   const createInvoice = useCreateInvoice();
   const updateInvoice = useUpdateInvoice();
   const deleteInvoice = useDeleteInvoice();
   const createInvoicesBulk = useCreateInvoicesBulk();
-  const markPaid = useMarkInvoicePaid();
-  const markUnpaid = useMarkInvoiceUnpaid();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
   const [successToast, setSuccessToast] = useState('');
+  
+  const [detailInvoice, setDetailInvoice] = useState(null);
+  const [paymentInvoice, setPaymentInvoice] = useState(null);
 
   // Invoice Form
   const defaultIssueDate = format(new Date(), 'yyyy-MM-dd');
@@ -59,7 +56,6 @@ export default function Invoices() {
     issue_date: defaultIssueDate,
     due_date: defaultDueDate,
     status: 'draft',
-    paid_date: defaultIssueDate,
     notes: ''
   });
   const [formError, setFormError] = useState('');
@@ -76,37 +72,63 @@ export default function Invoices() {
   const [bulkFormError, setBulkFormError] = useState('');
 
   // Summary Calcs
-  const summaryData = useMemo(() => {
-    let totalAmount = 0, totalCount = 0;
-    let paidAmount = 0, paidCount = 0;
-    let outstandingAmount = 0, outstandingCount = 0;
+  const cardsBase = useMemo(() => {
+    if (!invoices) return [];
+    if (!filterPeriod || filterPeriod === 'all') return invoices;
+    return invoices.filter(r => r.period_month === filterPeriod);
+  }, [invoices, filterPeriod]);
+
+  const cardTotals = useMemo(() => {
+    const total = cardsBase.reduce((sum, r) => sum + (r.amount || 0), 0);
+    const paid = cardsBase.reduce((sum, r) => sum + (r.total_paid || 0), 0);
+    const outstanding = cardsBase
+      .filter(r => r.computed_status === 'sent' || r.computed_status === 'partial' || r.computed_status === 'overdue')
+      .reduce((sum, r) => sum + (r.balance || 0), 0);
     
-    if (summaryInvoices) {
-      summaryInvoices.forEach(inv => {
-        totalAmount += inv.amount || 0;
-        totalCount++;
-        if (inv.status === 'paid') {
-          paidAmount += inv.amount || 0;
-          paidCount++;
-        } else if (inv.status === 'draft' || inv.status === 'sent') {
-          outstandingAmount += inv.amount || 0;
-          outstandingCount++;
-        }
-      });
-    }
-    return { totalAmount, totalCount, paidAmount, paidCount, outstandingAmount, outstandingCount };
-  }, [summaryInvoices]);
+    return { 
+      total, paid, outstanding,
+      totalCount: cardsBase.length,
+      paidCount: cardsBase.filter(r => r.computed_status === 'paid').length,
+      outstandingCount: cardsBase.filter(r => r.computed_status === 'sent' || r.computed_status === 'partial' || r.computed_status === 'overdue').length
+    };
+  }, [cardsBase]);
 
   // Client-side search and filtering
   const filteredInvoices = useMemo(() => {
-    if (!tableInvoices) return [];
-    if (!search) return tableInvoices;
-    const lowerSearch = search.toLowerCase();
-    return tableInvoices.filter(inv => 
-      inv.invoice_number?.toLowerCase().includes(lowerSearch) ||
-      inv.engagement?.client?.company_name?.toLowerCase().includes(lowerSearch)
-    );
-  }, [tableInvoices, search]);
+    if (!invoices) return [];
+    
+    return invoices.filter(inv => {
+      // Period filter
+      if (filterPeriod && filterPeriod !== 'all' && inv.period_month !== filterPeriod) {
+        return false;
+      }
+      
+      // Status filter
+      if (filterStatus && filterStatus !== 'all') {
+        if (inv.computed_status !== filterStatus) {
+          return false;
+        }
+      }
+      
+      // Client filter
+      if (filterClient && filterClient !== 'all' && inv.engagement?.client?.id !== filterClient) {
+        return false;
+      }
+      
+      // Search filter
+      if (search) {
+        const lowerSearch = search.toLowerCase();
+        if (
+          !inv.invoice_number?.toLowerCase().includes(lowerSearch) &&
+          !inv.engagement?.client?.company_name?.toLowerCase().includes(lowerSearch)
+        ) {
+          return false;
+        }
+      }
+      
+      return true;
+    });
+  }, [invoices, filterPeriod, filterStatus, filterClient, search]);
 
   const formatCurrency = (val) => new Intl.NumberFormat('id-ID').format(val || 0);
 
@@ -121,7 +143,6 @@ export default function Invoices() {
       issue_date: defaultIssueDate,
       due_date: defaultDueDate,
       status: 'draft',
-      paid_date: defaultIssueDate,
       notes: ''
     });
     setFormError('');
@@ -138,8 +159,7 @@ export default function Invoices() {
       amount: inv.amount || 0,
       issue_date: inv.issue_date || defaultIssueDate,
       due_date: inv.due_date || defaultDueDate,
-      status: inv.status || 'draft',
-      paid_date: inv.paid_date || defaultIssueDate,
+      status: (inv.status === 'paid' ? 'sent' : (inv.status || 'draft')),
       notes: inv.notes || ''
     });
     setFormError('');
@@ -150,7 +170,7 @@ export default function Invoices() {
     const newId = e.target.value;
     setFormData(prev => {
       const nextData = { ...prev, engagement_id: newId };
-      if (!prev.amount || parseInt(prev.amount, 10) === 0) {
+      if (!editingInvoice && (!prev.amount || parseInt(prev.amount, 10) === 0)) {
         const selected = engagements?.find(eng => eng.id === newId);
         if (selected) nextData.amount = selected.service_fee_per_month || 0;
       }
@@ -188,8 +208,7 @@ export default function Invoices() {
       const payload = {
         ...formData,
         amount: fee,
-        period_month: formData.period_month || null,
-        paid_date: formData.status === 'paid' ? (formData.paid_date || defaultIssueDate) : null
+        period_month: formData.period_month || null
       };
 
       if (editingInvoice) {
@@ -291,24 +310,14 @@ export default function Invoices() {
   };
 
   // --- Inline Actions ---
-  const handleMarkPaid = async (id, e) => {
+  const handleOpenDetail = (row, e) => {
     e?.stopPropagation();
-    try {
-      await markPaid.mutateAsync(id);
-      showToast('Invoice marked as paid');
-    } catch (err) {
-      alert(err.message);
-    }
+    setDetailInvoice(row);
   };
 
-  const handleMarkUnpaid = async (id, e) => {
+  const handleOpenPayment = (row, e) => {
     e?.stopPropagation();
-    try {
-      await markUnpaid.mutateAsync(id);
-      showToast('Invoice reverted to sent');
-    } catch (err) {
-      alert(err.message);
-    }
+    setPaymentInvoice(row);
   };
 
   const handleDelete = (id, e) => {
@@ -340,34 +349,44 @@ export default function Invoices() {
     { key: 'service', label: 'Service', render: (row) => <span className="text-sm text-gray-600">{row.engagement?.service?.name || '—'}</span> },
     { key: 'period', label: 'Period', render: (row) => formatPeriod(row.period_month) },
     { key: 'amount', label: 'Amount', render: (row) => <span className="font-medium">Rp {formatCurrency(row.amount)}</span> },
+    { key: 'paid_total', label: 'Paid / Total', render: (row) => {
+        const totalPaid = row.total_paid || 0;
+        const amount = row.amount || 0;
+        if (row.computed_status === 'paid') {
+          return <span className="text-emerald-600 font-medium">Rp {formatCurrency(totalPaid)}</span>;
+        } else if (row.computed_status === 'partial') {
+          return <span className="text-amber-700 font-medium">Rp {formatCurrency(totalPaid)} / Rp {formatCurrency(amount)}</span>;
+        }
+        return <span className="text-gray-500">Rp 0 / Rp {formatCurrency(amount)}</span>;
+    }},
     { key: 'due_date', label: 'Due Date', render: (row) => {
         if (!row.due_date) return '—';
-        const effStatus = getEffectiveStatus(row);
-        const isOverdue = effStatus === 'overdue';
+        const isOverdue = row.computed_status === 'overdue';
         return <span className={isOverdue ? "text-red-600 font-medium" : ""}>{format(new Date(row.due_date), 'dd MMM yyyy')}</span>;
     }},
     { key: 'status', label: 'Status', render: (row) => {
-      const effStatus = getEffectiveStatus(row);
-      if (effStatus === 'paid') return <Badge variant="success">Paid</Badge>;
-      if (effStatus === 'overdue') return <Badge variant="danger">Overdue</Badge>;
-      if (effStatus === 'sent') return <Badge variant="warning">Sent</Badge>;
-      return <Badge variant="neutral">Draft</Badge>;
+      const status = row.computed_status;
+      if (status === 'paid') return <Badge variant="success">Paid</Badge>;
+      if (status === 'partial') {
+        const percent = Math.round(((row.total_paid || 0) / row.amount) * 100) || 0;
+        return <Badge variant="warning">Partial ({percent}%)</Badge>;
+      }
+      if (status === 'overdue') return <Badge variant="danger">Overdue</Badge>;
+      if (status === 'sent') return <Badge variant="neutral">Sent</Badge>;
+      if (status === 'draft') return <Badge variant="neutral">Draft</Badge>;
+      return <Badge variant="neutral">{status}</Badge>;
     }},
     { key: 'actions', label: 'Actions', render: (row) => (
       <div className="flex gap-1" onClick={e => e.stopPropagation()}>
-        {row.status !== 'paid' ? (
-          <Button variant="ghost" size="sm" className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" title="Mark Paid" onClick={(e) => handleMarkPaid(row.id, e)}>
-            <Check size={14} />
-          </Button>
-        ) : (
-          <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-600 hover:bg-gray-100" title="Mark Unpaid" onClick={(e) => handleMarkUnpaid(row.id, e)}>
-            <Undo2 size={14} />
+        {row.computed_status !== 'paid' && row.computed_status !== 'draft' && (
+          <Button variant="ghost" size="sm" className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" title="Record Payment" onClick={(e) => handleOpenPayment(row, e)}>
+            <CreditCard size={14} />
           </Button>
         )}
-        <Button variant="ghost" size="sm" onClick={(e) => handleOpenEdit(row, e)}>
+        <Button variant="ghost" size="sm" title="Edit" onClick={(e) => handleOpenEdit(row, e)}>
           <Pencil size={14} />
         </Button>
-        <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-600 hover:bg-red-50" onClick={(e) => handleDelete(row.id, e)}>
+        <Button variant="ghost" size="sm" title="Delete" className="text-red-500 hover:text-red-600 hover:bg-red-50" onClick={(e) => handleDelete(row.id, e)}>
           <Trash2 size={14} />
         </Button>
       </div>
@@ -413,21 +432,27 @@ export default function Invoices() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <Card className="!p-4">
-          <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Total This Month</p>
-          <div className="text-2xl font-semibold tracking-tight text-gray-900 leading-tight">Rp {formatCurrency(summaryData.totalAmount)}</div>
-          <p className="text-xs text-gray-500 mt-1">{summaryData.totalCount} invoices</p>
+          <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">
+            Total {(!filterPeriod || filterPeriod === 'all') ? '(All Time)' : `— ${formatPeriod(filterPeriod)}`}
+          </p>
+          <div className="text-2xl font-semibold tracking-tight text-gray-900 leading-tight">Rp {formatCurrency(cardTotals.total)}</div>
+          <p className="text-xs text-gray-500 mt-1">{cardTotals.totalCount} invoices</p>
         </Card>
         <Card className="!p-4">
-          <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Paid</p>
-          <div className="text-2xl font-semibold tracking-tight text-emerald-600 leading-tight">Rp {formatCurrency(summaryData.paidAmount)}</div>
-          <p className="text-xs text-gray-500 mt-1">{summaryData.paidCount} paid</p>
+          <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">
+            Paid {(!filterPeriod || filterPeriod === 'all') ? '(All Time)' : `— ${formatPeriod(filterPeriod)}`}
+          </p>
+          <div className="text-2xl font-semibold tracking-tight text-emerald-600 leading-tight">Rp {formatCurrency(cardTotals.paid)}</div>
+          <p className="text-xs text-gray-500 mt-1">{cardTotals.paidCount} paid</p>
         </Card>
         <Card className="!p-4">
-          <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Outstanding</p>
-          <div className={`text-2xl font-semibold tracking-tight leading-tight ${summaryData.outstandingAmount > 0 ? 'text-amber-600' : 'text-gray-400'}`}>
-            Rp {formatCurrency(summaryData.outstandingAmount)}
+          <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">
+            Outstanding {(!filterPeriod || filterPeriod === 'all') ? '(All Time)' : `— ${formatPeriod(filterPeriod)}`}
+          </p>
+          <div className={`text-2xl font-semibold tracking-tight leading-tight ${cardTotals.outstanding > 0 ? 'text-amber-600' : 'text-gray-400'}`}>
+            Rp {formatCurrency(cardTotals.outstanding)}
           </div>
-          <p className="text-xs text-gray-500 mt-1">{summaryData.outstandingCount} unpaid</p>
+          <p className="text-xs text-gray-500 mt-1">{cardTotals.outstandingCount} unpaid</p>
         </Card>
       </div>
 
@@ -445,7 +470,7 @@ export default function Invoices() {
           value={filterPeriod}
           onChange={e => setFilterPeriod(e.target.value)}
           options={[
-            { value: '', label: 'All months' },
+            { value: 'all', label: 'All months' },
             ...lastNMonths(12)
           ]}
           className="w-48"
@@ -454,9 +479,10 @@ export default function Invoices() {
           value={filterStatus}
           onChange={e => setFilterStatus(e.target.value)}
           options={[
-            { value: '', label: 'All statuses' },
+            { value: 'all', label: 'All statuses' },
             { value: 'draft', label: 'Draft' },
             { value: 'sent', label: 'Sent' },
+            { value: 'partial', label: 'Partial' },
             { value: 'paid', label: 'Paid' },
             { value: 'overdue', label: 'Overdue' }
           ]}
@@ -466,14 +492,20 @@ export default function Invoices() {
           value={filterClient}
           onChange={e => setFilterClient(e.target.value)}
           options={[
-            { value: '', label: 'All clients' },
+            { value: 'all', label: 'All clients' },
             ...(clients?.map(c => ({ value: c.id, label: c.company_name })) || [])
           ]}
           className="w-56"
         />
       </div>
 
-      {!tableLoading && filteredInvoices?.length === 0 && !search ? (
+      {invoices && (
+        <p className="text-xs text-gray-500 mb-4 block">
+          Showing {filteredInvoices.length} of {invoices.length} entries
+        </p>
+      )}
+
+      {!tableLoading && filteredInvoices?.length === 0 && !search && filterClient === 'all' && filterStatus === 'all' && filterPeriod === 'all' ? (
         <EmptyState 
           icon={FileText} 
           title="No invoices yet" 
@@ -484,12 +516,36 @@ export default function Invoices() {
         <DataTable 
           columns={columns} 
           rows={filteredInvoices} 
-          onRowClick={(row) => handleOpenEdit(row)}
+          onRowClick={(row) => handleOpenDetail(row)}
           emptyMessage="No invoices match your filters"
         />
       )}
 
-      {/* SINGLE INVOICE MODAL */}
+      {/* MODALS */}
+      <InvoiceDetailModal 
+        open={!!detailInvoice} 
+        onClose={() => setDetailInvoice(null)} 
+        invoice={detailInvoice} 
+        onRecordPayment={(inv) => {
+          setPaymentInvoice(inv);
+        }}
+      />
+
+      <RecordPaymentModal 
+        open={!!paymentInvoice} 
+        onClose={() => setPaymentInvoice(null)} 
+        invoice={paymentInvoice} 
+        onSuccess={(amt) => {
+          setPaymentInvoice(null);
+          showToast(`Payment recorded: Rp ${formatCurrency(amt)}`);
+          if (detailInvoice && detailInvoice.id === paymentInvoice.id) {
+             // Let react-query refresh data automatically; we could update local state if we want 
+             // but user sees the refresh right away
+          }
+        }}
+      />
+
+      {/* SINGLE INVOICE EDIT MODAL */}
       <Modal 
         open={isModalOpen} 
         onClose={() => setIsModalOpen(false)}
@@ -556,7 +612,8 @@ export default function Invoices() {
               value={formData.amount}
               onChange={e => setFormData({...formData, amount: e.target.value})}
             />
-            <p className="text-xs text-gray-500 mt-1 uppercase tracking-wider font-medium text-emerald-600">
+            <p className="text-xs text-gray-500 mt-1">Auto-filled from engagement (you can edit if needed)</p>
+            <p className="text-xs mt-1 uppercase tracking-wider font-medium text-emerald-600">
               = Rp {formatCurrency(parseInt(formData.amount, 10) || 0)}
             </p>
           </div>
@@ -578,27 +635,20 @@ export default function Invoices() {
             />
           </div>
 
-          <div className={`grid gap-4 ${formData.status === 'paid' ? 'grid-cols-2' : 'grid-cols-1'}`}>
-            <Select 
-              label="Status *" 
-              required
-              value={formData.status}
-              onChange={e => setFormData({...formData, status: e.target.value})}
-              options={[
-                { value: 'draft', label: 'Draft' },
-                { value: 'sent', label: 'Sent' },
-                { value: 'paid', label: 'Paid' }
-              ]}
-            />
-            {formData.status === 'paid' && (
-              <Input 
-                label="Paid Date *" 
-                type="date"
+          <div className="grid gap-4 grid-cols-1">
+            <div>
+              <Select 
+                label="Status *" 
                 required
-                value={formData.paid_date}
-                onChange={e => setFormData({...formData, paid_date: e.target.value})}
+                value={formData.status}
+                onChange={e => setFormData({...formData, status: e.target.value})}
+                options={[
+                  { value: 'draft', label: 'Draft' },
+                  { value: 'sent', label: 'Sent' }
+                ]}
               />
-            )}
+              <p className="text-xs text-gray-500 mt-1">To mark as paid, use 'Record Payment' button after creating the invoice.</p>
+            </div>
           </div>
 
           <Textarea 
@@ -746,7 +796,7 @@ export default function Invoices() {
         <p className="text-sm text-gray-600">
           Delete this invoice for {
             (() => {
-              const inv = tableInvoices?.find(i => i.id === deleteId);
+              const inv = invoices?.find(i => i.id === deleteId);
               if (!inv) return '';
               return <strong>{inv.engagement?.client?.company_name} - {formatPeriod(inv.period_month)}</strong>;
             })()
