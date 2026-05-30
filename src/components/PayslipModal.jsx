@@ -5,6 +5,14 @@ import { format } from 'date-fns';
 import { formatPeriod } from '../lib/utils';
 import { toPng } from 'html-to-image';
 
+const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#039;',
+}[char]));
+
 export function PayslipModal({ open, onClose, matchingFees }) {
   if (!matchingFees || matchingFees.length === 0) return null;
 
@@ -61,15 +69,296 @@ export function PayslipModal({ open, onClose, matchingFees }) {
     };
   };
 
+  const getPrintHtml = () => {
+    const rows = matchingFees.map((feeItem, idx) => {
+      const breakdown = getFeeBreakdown(feeItem);
+      const description = `${feeItem.engagement?.client?.company_name || '-'} - ${feeItem.engagement?.service?.name || '-'}`;
+      const details = [
+        ...breakdown.details,
+        feeItem.notes ? `Note: ${feeItem.notes}` : '',
+      ].filter(Boolean).join(' / ');
+
+      return `
+        <tr>
+          <td>${idx + 1}</td>
+          <td>
+            <strong>${escapeHtml(description)}</strong>
+            ${details ? `<span>${escapeHtml(details)}</span>` : ''}
+          </td>
+          <td class="right">${escapeHtml(breakdown.rate)}</td>
+          <td class="right">${escapeHtml(breakdown.quantity)}</td>
+          <td class="right strong">Rp ${formatCurrency(feeItem.calculated_fee)}</td>
+        </tr>
+      `;
+    }).join('');
+
+    return `<!doctype html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <title>slip-gaji-${escapeHtml(recipientName)}-${escapeHtml(primaryFee.period_month)}</title>
+          <style>
+            @page { size: A4 portrait; margin: 0; }
+            * { box-sizing: border-box; }
+            html, body {
+              width: 210mm;
+              min-height: 297mm;
+              margin: 0;
+              background: #fff;
+              color: #111;
+              font-family: Arial, Helvetica, sans-serif;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+            .page {
+              width: 210mm;
+              min-height: 297mm;
+              padding: 14mm;
+              display: flex;
+              flex-direction: column;
+            }
+            .header {
+              border: 1.5px solid #111;
+              border-radius: 8px;
+              padding: 18px;
+              display: grid;
+              grid-template-columns: 1fr 72mm;
+              gap: 18px;
+            }
+            .eyebrow {
+              font-size: 10px;
+              letter-spacing: 0.18em;
+              text-transform: uppercase;
+              font-weight: 700;
+              color: #555;
+            }
+            h1 {
+              margin: 8px 0 16px;
+              font-size: 30px;
+              line-height: 1.1;
+              letter-spacing: -0.02em;
+            }
+            .company, .meta, .muted {
+              font-size: 12px;
+              line-height: 1.55;
+              color: #444;
+            }
+            .company strong, .meta strong {
+              color: #111;
+            }
+            .meta {
+              border-left: 1px solid #ddd;
+              padding-left: 18px;
+            }
+            .meta-row {
+              margin-bottom: 11px;
+            }
+            .status {
+              display: inline-block;
+              border: 1px solid #111;
+              border-radius: 999px;
+              padding: 4px 9px;
+              color: #111;
+              font-size: 11px;
+              font-weight: 700;
+            }
+            .summary {
+              margin-top: 20px;
+              display: grid;
+              grid-template-columns: 1fr 78mm;
+              gap: 16px;
+            }
+            .box {
+              border: 1px solid #ddd;
+              border-radius: 8px;
+              padding: 16px;
+            }
+            .recipient {
+              font-size: 24px;
+              font-weight: 800;
+              margin: 8px 0 4px;
+            }
+            .total-box {
+              border-color: #111;
+              background: #f6f6f6;
+            }
+            .total {
+              margin-top: 8px;
+              font-size: 28px;
+              font-weight: 800;
+              letter-spacing: -0.03em;
+            }
+            .section-title {
+              margin: 24px 0 10px;
+              display: flex;
+              align-items: end;
+              justify-content: space-between;
+            }
+            h2 {
+              margin: 3px 0 0;
+              font-size: 16px;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              border: 1px solid #111;
+              font-size: 11px;
+            }
+            th {
+              border-bottom: 1px solid #111;
+              padding: 10px 9px;
+              text-align: left;
+              font-weight: 800;
+              background: #f2f2f2;
+            }
+            td {
+              border-bottom: 1px solid #ddd;
+              padding: 12px 9px;
+              vertical-align: top;
+            }
+            td span {
+              display: block;
+              margin-top: 4px;
+              color: #666;
+              font-size: 10px;
+              line-height: 1.45;
+            }
+            .right { text-align: right; }
+            .strong { font-weight: 800; }
+            .totals {
+              width: 84mm;
+              margin: 16px 0 0 auto;
+              border: 1px solid #111;
+              border-radius: 8px;
+              overflow: hidden;
+              font-size: 12px;
+            }
+            .totals div {
+              display: flex;
+              justify-content: space-between;
+              padding: 11px 14px;
+              border-bottom: 1px solid #ddd;
+            }
+            .totals div:last-child {
+              border-bottom: none;
+              background: #f2f2f2;
+              font-weight: 800;
+            }
+            .bottom {
+              margin-top: auto;
+              padding-top: 28px;
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 16px;
+            }
+            .signature-line {
+              margin-top: 34px;
+              padding-top: 10px;
+              border-top: 1px solid #999;
+            }
+            footer {
+              margin-top: 18px;
+              border-top: 1px solid #ddd;
+              padding-top: 12px;
+              text-align: center;
+              font-size: 11px;
+              color: #666;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="page">
+            <header class="header">
+              <div>
+                <div class="eyebrow">Freelancer Payslip</div>
+                <h1>${escapeHtml(brandName)}</h1>
+                <div class="company">
+                  <strong>${escapeHtml(companyName)}</strong><br />
+                  ${escapeHtml(companyLocation)}<br />
+                  ${escapeHtml(companyEmail)}
+                </div>
+              </div>
+              <div class="meta">
+                <div class="eyebrow">Slip Details</div>
+                <div class="meta-row"><strong>Slip Number</strong><br />${escapeHtml(slipNumber)}</div>
+                <div class="meta-row"><strong>Period</strong><br />${escapeHtml(periodStr)}</div>
+                <div class="meta-row"><strong>Issued Date</strong><br />${escapeHtml(todayStr)}</div>
+                <span class="status">${escapeHtml(paymentStatus)}</span>
+              </div>
+            </header>
+
+            <section class="summary">
+              <div class="box">
+                <div class="eyebrow">Paid To</div>
+                <div class="recipient">${escapeHtml(recipientName)}</div>
+                <div class="muted">${escapeHtml(recipientRole)}</div>
+              </div>
+              <div class="box total-box">
+                <div class="eyebrow">Net Paid Total</div>
+                <div class="total">Rp ${formatCurrency(grandTotalGaji)}</div>
+                <div class="muted">${matchingFees.length} fee ${matchingFees.length === 1 ? 'entry' : 'entries'}</div>
+              </div>
+            </section>
+
+            <section>
+              <div class="section-title">
+                <div>
+                  <div class="eyebrow">Statement of Earnings</div>
+                  <h2>Fee breakdown</h2>
+                </div>
+                <div class="muted">Amounts in IDR</div>
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th style="width: 34px;">#</th>
+                    <th>Description</th>
+                    <th class="right" style="width: 98px;">Unit Rate</th>
+                    <th class="right" style="width: 112px;">Count / Days</th>
+                    <th class="right" style="width: 112px;">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+              </table>
+            </section>
+
+            <section class="totals">
+              <div><span>Subtotal</span><strong>Rp ${formatCurrency(grandTotalGaji)}</strong></div>
+              <div><span>Adjustments</span><strong>Rp 0</strong></div>
+              <div><span>Total Paid</span><strong>Rp ${formatCurrency(grandTotalGaji)}</strong></div>
+            </section>
+
+            <section class="bottom">
+              <div class="box">
+                <div class="eyebrow">Notes</div>
+                <p class="muted">This payslip summarizes approved freelancer fees for the selected period.</p>
+              </div>
+              <div class="box">
+                <div class="eyebrow">Authorized By</div>
+                <div class="signature-line">
+                  <strong>ILUSA Partnership Team</strong><br />
+                  <span class="muted">${escapeHtml(companyEmail)}</span>
+                </div>
+              </div>
+            </section>
+            <footer>Thank you for your partnership and hard work.</footer>
+          </div>
+        </body>
+      </html>`;
+  };
+
   const handlePrint = () => {
-    const previousTitle = document.title;
-    document.title = `slip-gaji-${recipientName}-${primaryFee.period_month}`;
-    const restoreTitle = () => {
-      document.title = previousTitle;
-      window.removeEventListener('afterprint', restoreTitle);
-    };
-    window.addEventListener('afterprint', restoreTitle);
-    window.print();
+    const printWindow = window.open('', '_blank', 'width=900,height=1200');
+    if (!printWindow) {
+      window.print();
+      return;
+    }
+
+    printWindow.document.open();
+    printWindow.document.write(getPrintHtml());
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => printWindow.print(), 250);
   };
 
   const handleDownloadPNG = () => {
@@ -175,24 +464,21 @@ export function PayslipModal({ open, onClose, matchingFees }) {
           className="mx-auto flex min-h-[297mm] w-[210mm] flex-col bg-white p-[14mm] text-gray-950 shadow-sm"
           style={{ fontFamily: 'Inter, Arial, Helvetica, sans-serif' }}
         >
-          <header className="no-print-break overflow-hidden rounded-lg border border-gray-900">
+          <header className="no-print-break overflow-hidden rounded-lg border border-gray-900 bg-white">
             <div className="flex items-stretch">
-              <div className="flex flex-1 flex-col justify-between bg-gray-950 p-6 text-white">
+              <div className="flex flex-1 flex-col justify-between p-6 text-gray-950">
                 <div>
-                  <div className="mb-6 inline-flex h-10 w-10 items-center justify-center rounded bg-white text-sm font-bold tracking-tight text-gray-950">
-                    IL
-                  </div>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-200">Freelancer Payslip</p>
-                  <h1 className="mt-2 text-3xl font-bold tracking-tight text-white">{brandName}</h1>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-500">Freelancer Payslip</p>
+                  <h1 className="mt-2 text-3xl font-bold tracking-tight text-gray-950">{brandName}</h1>
                 </div>
-                <div className="mt-8 text-xs leading-5 text-gray-200">
-                  <p className="font-semibold text-white">{companyName}</p>
+                <div className="mt-8 text-xs leading-5 text-gray-600">
+                  <p className="font-semibold text-gray-950">{companyName}</p>
                   <p>{companyLocation}</p>
                   <p>{companyEmail}</p>
                 </div>
               </div>
 
-              <div className="w-[72mm] bg-white p-6">
+              <div className="w-[72mm] border-l border-gray-200 bg-gray-50 p-6">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-500">Slip Details</p>
                 <dl className="mt-5 space-y-4 text-sm">
                   <div>
@@ -209,7 +495,7 @@ export function PayslipModal({ open, onClose, matchingFees }) {
                   </div>
                   <div>
                     <dt className="text-xs text-gray-500">Status</dt>
-                    <dd className={`mt-1 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${paymentStatus === 'Paid' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                    <dd className="mt-1 inline-flex rounded-full border border-gray-900 bg-white px-2.5 py-1 text-xs font-semibold text-gray-950">
                       {paymentStatus}
                     </dd>
                   </div>
@@ -226,10 +512,10 @@ export function PayslipModal({ open, onClose, matchingFees }) {
                 <p className="mt-1 text-sm text-gray-600">{recipientRole}</p>
               </div>
 
-              <div className="rounded-lg bg-emerald-50 p-5 ring-1 ring-emerald-200">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-700">Net Paid Total</p>
-                <p className="mt-3 text-3xl font-bold tracking-tight text-emerald-900">Rp {formatCurrency(grandTotalGaji)}</p>
-                <p className="mt-2 text-xs text-emerald-800">Consolidated from {matchingFees.length} fee {matchingFees.length === 1 ? 'entry' : 'entries'}.</p>
+              <div className="rounded-lg border border-gray-900 bg-gray-50 p-5">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-500">Net Paid Total</p>
+                <p className="mt-3 text-3xl font-bold tracking-tight text-gray-950">Rp {formatCurrency(grandTotalGaji)}</p>
+                <p className="mt-2 text-xs text-gray-600">Consolidated from {matchingFees.length} fee {matchingFees.length === 1 ? 'entry' : 'entries'}.</p>
               </div>
             </section>
 
@@ -244,7 +530,7 @@ export function PayslipModal({ open, onClose, matchingFees }) {
 
               <div className="overflow-hidden rounded-lg border border-gray-200">
                 <table className="w-full border-collapse text-left text-xs">
-                  <thead className="bg-gray-950 text-white">
+                  <thead className="border-b border-gray-900 bg-gray-100 text-gray-950">
                     <tr>
                       <th className="w-10 px-3 py-3 font-semibold">#</th>
                       <th className="px-3 py-3 font-semibold">Description</th>
@@ -290,7 +576,7 @@ export function PayslipModal({ open, onClose, matchingFees }) {
                 <span className="text-gray-600">Adjustments</span>
                 <span className="font-semibold text-gray-950">Rp 0</span>
               </div>
-              <div className="flex justify-between bg-gray-950 px-4 py-4 text-sm text-white">
+              <div className="flex justify-between bg-gray-100 px-4 py-4 text-sm text-gray-950">
                 <span className="font-semibold">Total Paid</span>
                 <span className="font-bold">Rp {formatCurrency(grandTotalGaji)}</span>
               </div>
