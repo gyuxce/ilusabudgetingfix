@@ -33,62 +33,15 @@ export function PayslipModal({ open, onClose, matchingFees }) {
 
   const formatCurrency = (val) => new Intl.NumberFormat('id-ID').format(val || 0);
 
-  const getFeeBreakdown = (feeItem) => {
-    if (feeItem.fee_type === 'hourly') {
-      const activeDays = (feeItem.working_days || 0) - (feeItem.off_days || 0);
-      return {
-        rate: `Rp ${formatCurrency(feeItem.hourly_rate)}`,
-        quantity: `${feeItem.hours_per_day || 0}h/day x ${activeDays} days`,
-        details: [
-          `Rate Rp ${formatCurrency(feeItem.hourly_rate)}`,
-          `${feeItem.hours_per_day || 0}h/day x ${activeDays} days`,
-          `${feeItem.working_days || 0} working days`,
-          `${feeItem.off_days || 0} off days`,
-        ],
-      };
-    }
-
-    if (feeItem.fee_type === 'fixed') {
-      return {
-        rate: 'Fixed fee',
-        quantity: '1 period',
-        details: ['Fixed amount per project'],
-      };
-    }
-
-    const details = [];
-    if (feeItem.qty_single_post > 0) {
-      details.push(`${feeItem.qty_single_post} single post x Rp ${formatCurrency(feeItem.rate_single_post)}`);
-    }
-    if (feeItem.qty_carousel > 0) {
-      details.push(`${feeItem.qty_carousel} carousel x Rp ${formatCurrency(feeItem.rate_carousel)}`);
-    }
-    if (feeItem.qty_reels > 0) {
-      details.push(`${feeItem.qty_reels} reels x Rp ${formatCurrency(feeItem.rate_reels)}`);
-    }
-
-    return {
-      rate: 'Content rate',
-      quantity: details.length > 0 ? `${details.length} item type${details.length > 1 ? 's' : ''}` : '-',
-      details,
-    };
-  };
-
   const getPrintHtml = () => {
     const rows = matchingFees.map((feeItem, idx) => {
-      const breakdown = getFeeBreakdown(feeItem);
       const description = `${feeItem.engagement?.client?.company_name || '-'} - ${feeItem.engagement?.service?.name || '-'}`;
-      const details = [
-        ...breakdown.details,
-        feeItem.notes ? `Note: ${feeItem.notes}` : '',
-      ].filter(Boolean).join(' / ');
 
       return `
         <tr>
           <td>${idx + 1}</td>
           <td>
             <strong>${escapeHtml(description)}</strong>
-            ${details ? `<span>${escapeHtml(details)}</span>` : ''}
           </td>
           <td class="right strong">Rp ${formatCurrency(feeItem.calculated_fee)}</td>
         </tr>
@@ -540,21 +493,13 @@ export function PayslipModal({ open, onClose, matchingFees }) {
                   </thead>
                   <tbody className="divide-y divide-gray-200 bg-white">
                     {matchingFees.map((feeItem, idx) => {
-                      const breakdown = getFeeBreakdown(feeItem);
                       const description = `${feeItem.engagement?.client?.company_name || '-'} - ${feeItem.engagement?.service?.name || '-'}`;
-                      const details = [
-                        ...breakdown.details,
-                        feeItem.notes ? `Note: ${feeItem.notes}` : '',
-                      ].filter(Boolean);
 
                       return (
                         <tr key={feeItem.id} className="align-top">
                           <td className="px-3 py-4 font-semibold text-gray-500">{idx + 1}</td>
                           <td className="px-3 py-4">
                             <p className="font-semibold text-gray-950">{description}</p>
-                            {details.length > 0 && (
-                              <p className="mt-1 text-[11px] leading-5 text-gray-500">{details.join(' / ')}</p>
-                            )}
                           </td>
                           <td className="px-3 py-4 text-right font-bold text-gray-950">Rp {formatCurrency(feeItem.calculated_fee)}</td>
                         </tr>
