@@ -242,8 +242,13 @@ export default function Fees() {
       const rate = parseFloat(formData.hourly_rate) || 0;
       const hours = parseFloat(formData.hours_per_day) || 0;
       const days = parseFloat(formData.working_days) || 0;
+      const offDays = parseFloat(formData.off_days) || 0;
       if (rate <= 0 || hours <= 0 || days <= 0) {
         setFormError('Hourly rate, hours per day, and working days must be greater than zero.');
+        return;
+      }
+      if (offDays > days) {
+        setFormError('Off days cannot be greater than working days.');
         return;
       }
     } else if (formData.fee_type === 'per_content') {
@@ -332,11 +337,21 @@ export default function Fees() {
     )},
     { key: 'calculation', label: 'Calculation', render: (row) => {
       if (row.fee_type === 'hourly') {
-        return <span className="text-xs text-gray-500">{formatCurrency(row.hourly_rate)} × {row.hours_per_day}h × {row.working_days - (row.off_days || 0)}d</span>;
+        const activeDays = (row.working_days || 0) - (row.off_days || 0);
+        return (
+          <div className="text-xs text-gray-500 leading-relaxed">
+            <div>Rp {formatCurrency(row.hourly_rate)} × {row.hours_per_day}h/day × {activeDays}d</div>
+            <div className="text-[11px] text-gray-400">{row.working_days || 0} working days / {row.off_days || 0} off days</div>
+          </div>
+        );
       } else if (row.fee_type === 'fixed') {
-        return <span className="text-xs text-gray-500">Fixed amount</span>;
+        return <span className="text-xs text-gray-500">Fixed amount per project</span>;
       }
-      return <span className="text-xs text-gray-500">{row.qty_single_post || 0}p + {row.qty_carousel || 0}c + {row.qty_reels || 0}r</span>;
+      const parts = [];
+      if (row.qty_single_post > 0) parts.push(`${row.qty_single_post} single × Rp ${formatCurrency(row.rate_single_post)}`);
+      if (row.qty_carousel > 0) parts.push(`${row.qty_carousel} carousel × Rp ${formatCurrency(row.rate_carousel)}`);
+      if (row.qty_reels > 0) parts.push(`${row.qty_reels} reels × Rp ${formatCurrency(row.rate_reels)}`);
+      return <span className="text-xs text-gray-500">{parts.length > 0 ? parts.join(' / ') : 'No content items'}</span>;
     }},
     { key: 'fee', label: 'Fee', render: (row) => <span className="font-medium">Rp {formatCurrency(row.calculated_fee)}</span> },
     { key: 'status', label: 'Status', render: (row) => (
@@ -579,8 +594,12 @@ export default function Fees() {
               {formData.fee_type === 'hourly' 
                 ? `${formatCurrency(formData.hourly_rate || 0)} × ${formData.hours_per_day || 0} × (${formData.working_days || 0} - ${formData.off_days || 0}) = Rp ${formatCurrency(Math.max(0, liveFee))}` 
                 : formData.fee_type === 'per_content' 
-                ? `${formData.qty_single_post || 0}p + ${formData.qty_carousel || 0}c + ${formData.qty_reels || 0}r = Rp ${formatCurrency(Math.max(0, liveFee))}`
-                : `Fixed amount (no calculation)`
+                ? [
+                    `${formData.qty_single_post || 0} single × Rp ${formatCurrency(formData.rate_single_post || 0)}`,
+                    `${formData.qty_carousel || 0} carousel × Rp ${formatCurrency(formData.rate_carousel || 0)}`,
+                    `${formData.qty_reels || 0} reels × Rp ${formatCurrency(formData.rate_reels || 0)}`
+                  ].join(' + ') + ` = Rp ${formatCurrency(Math.max(0, liveFee))}`
+                : `Fixed amount = Rp ${formatCurrency(Math.max(0, liveFee))}`
               }
             </p>
           </div>
