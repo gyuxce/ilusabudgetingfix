@@ -142,6 +142,12 @@ export default function Fees() {
     return { totalAmt, paidAmt, pendingAmt, totalCount, paidCount, pendingCount };
   }, [filteredRows]);
 
+  // Group and find all matching fees for the clicked freelancer in the same period to generate a consolidated payslip
+  const matchingPayslipFees = useMemo(() => {
+    if (!payslipFee || !fees) return [];
+    return fees.filter(f => f.freelancer_id === payslipFee.freelancer_id && f.period_month === payslipFee.period_month);
+  }, [payslipFee, fees]);
+
   const liveFee = useMemo(() => {
     if (formData.fee_type === 'hourly') {
       return (parseFloat(formData.hourly_rate) || 0) * 
@@ -649,7 +655,7 @@ export default function Fees() {
       <PayslipModal 
         open={!!payslipFee} 
         onClose={() => setPayslipFee(null)} 
-        fee={payslipFee} 
+        matchingFees={matchingPayslipFees} 
       />
     </>
   );
