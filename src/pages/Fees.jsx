@@ -245,6 +245,12 @@ export default function Fees() {
       return;
     }
 
+    const offDays = parseFloat(formData.off_days) || 0;
+    if (offDays < 0) {
+      setFormError('Off days cannot be negative.');
+      return;
+    }
+
     if (formData.fee_type === 'hourly') {
       const rate = parseFloat(formData.hourly_rate) || 0;
       const hours = parseFloat(formData.hours_per_day) || 0;
@@ -273,14 +279,14 @@ export default function Fees() {
         fee_type: formData.fee_type,
         status: formData.status,
         paid_date: formData.status === 'paid' ? formData.paid_date : null,
-        notes: formData.notes
+        notes: formData.notes.trim() || null
       };
 
       if (formData.fee_type === 'hourly') {
         payload.hourly_rate = parseFloat(formData.hourly_rate) || 0;
         payload.hours_per_day = parseFloat(formData.hours_per_day) || 0;
         payload.working_days = parseFloat(formData.working_days) || 0;
-        payload.off_days = parseFloat(formData.off_days) || 0;
+        payload.off_days = offDays;
 
         payload.rate_single_post = null; payload.qty_single_post = null;
         payload.rate_carousel = null; payload.qty_carousel = null;
@@ -423,7 +429,7 @@ export default function Fees() {
           <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">
             Paid {activeFilterLabel}
           </p>
-          <div className="text-2xl font-semibold tracking-tight text-gray-950 leading-tight">
+          <div className="text-2xl font-semibold tracking-tight text-slate-700 leading-tight">
             <AnimatedNumber value={cardTotals.paidAmt} prefix="Rp " />
           </div>
           <p className="text-xs text-gray-500 mt-1">{cardTotals.paidCount} paid</p>
@@ -594,7 +600,7 @@ export default function Fees() {
 
           <div className="bg-gray-50 border border-gray-200 rounded-md p-3 my-4">
             <p className="text-xs text-gray-600 mb-0.5 uppercase tracking-wider font-medium">Calculated Fee</p>
-            <div className="text-2xl font-semibold tracking-tight text-gray-950">
+            <div className="text-2xl font-semibold tracking-tight text-slate-700">
               <AnimatedNumber value={Math.max(0, liveFee)} prefix="Rp " />
             </div>
             <p className="text-xs text-gray-600 mt-1 font-mono">

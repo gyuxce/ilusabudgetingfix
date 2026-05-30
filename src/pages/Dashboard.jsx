@@ -463,13 +463,13 @@ export default function Dashboard() {
           <div className="grid grid-cols-2 border-t border-gray-100 bg-gray-50 lg:border-l lg:border-t-0">
             <div className="p-5">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-gray-500">Cash In</p>
-              <p className="mt-2 text-xl font-bold text-gray-950">
+              <p className="mt-2 text-xl font-bold text-slate-700">
                 <AnimatedNumber value={metrics.netCashflow.cashIn} prefix="Rp " />
               </p>
             </div>
             <div className="border-l border-gray-200 p-5">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-gray-500">Cash Out</p>
-              <p className="mt-2 text-xl font-bold text-gray-950">
+              <p className="mt-2 text-xl font-bold text-red-600">
                 <AnimatedNumber value={metrics.netCashflow.cashOut} prefix="Rp " />
               </p>
             </div>
@@ -479,9 +479,9 @@ export default function Dashboard() {
 
       <section className="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Revenue Issued" value={metrics.revenueIssued} count={`${metrics.revenueIssuedCount} invoices`} icon={FileText} tone="blue" delay={0.02} />
-        <StatCard label="Revenue Received" value={metrics.revenueReceived} count={`${metrics.revenueReceivedCount} paid`} icon={Banknote} tone="gray" trend="cash in" delay={0.08} />
+        <StatCard label="Revenue Received" value={metrics.revenueReceived} count={`${metrics.revenueReceivedCount} paid`} icon={Banknote} tone="blue" trend="cash in" delay={0.08} />
         <StatCard label="Outstanding" value={metrics.outstandingAmount} count={`${metrics.outstandingCount} unpaid, ${metrics.outstandingOverdueCount} overdue`} icon={CreditCard} tone="amber" delay={0.14} />
-        <StatCard label="Profit Cash" value={metrics.profitCash} count="Received minus paid fees" icon={TrendingUp} tone={metrics.profitCash < 0 ? 'red' : 'gray'} delay={0.2} />
+        <StatCard label="Profit Cash" value={metrics.profitCash} count="Received minus paid fees" icon={TrendingUp} tone={metrics.profitCash < 0 ? 'red' : 'dark'} delay={0.2} />
       </section>
 
       {alertElement}
@@ -540,7 +540,7 @@ export default function Dashboard() {
         <Card title={`Freelancer Fees - ${periodFilter === 'all' ? 'All Time' : formatPeriod(periodFilter)}`} className="lg:col-span-2">
           <div className="grid gap-4 sm:grid-cols-3">
             <MiniMetric label="Total" value={metrics.feesTotalAmount} count={`${metrics.feesTotalCount} entries`} />
-            <MiniMetric label="Paid" value={metrics.feesPaidAmount} tone="gray" />
+            <MiniMetric label="Paid" value={metrics.feesPaidAmount} tone="slate" />
             <MiniMetric label="Pending" value={metrics.feesPendingAmount} tone="amber" />
           </div>
           <div className="mt-6 h-44">
@@ -585,7 +585,7 @@ export default function Dashboard() {
         >
           <div className="grid gap-4 sm:grid-cols-2">
             <MiniMetric label="Pending This Month" value={ownerInsights.payables.pendingAmount} count={`${ownerInsights.payables.pendingCount} entries`} tone="amber" />
-            <MiniMetric label="Paid This Month" value={ownerInsights.payables.paidAmount} count={`${ownerInsights.payables.paidCount} entries`} />
+            <MiniMetric label="Paid This Month" value={ownerInsights.payables.paidAmount} count={`${ownerInsights.payables.paidCount} entries`} tone="slate" />
           </div>
           <SplitList
             leftTitle="Unpaid by Freelancer"
@@ -665,6 +665,7 @@ export default function Dashboard() {
 function MiniMetric({ label, value, count, tone = 'gray' }) {
   const toneClass = {
     gray: 'text-gray-950',
+    slate: 'text-slate-700',
     amber: 'text-amber-700',
   }[tone];
 
@@ -680,7 +681,7 @@ function MiniMetric({ label, value, count, tone = 'gray' }) {
 }
 
 function HealthMetric({ title, value, detail, tone = 'gray', isPercent = false }) {
-  const valueClass = tone === 'red' ? 'text-red-600' : 'text-gray-950';
+  const valueClass = tone === 'red' ? 'text-red-600' : 'text-slate-700';
 
   return (
     <motion.div
@@ -717,7 +718,7 @@ function CompactAmountList({ title, items }) {
           {items.map((item) => (
             <div key={item.name} className="flex items-start justify-between gap-3 text-sm">
               <span className="min-w-0 truncate text-gray-700">{item.name}</span>
-              <span className="shrink-0 font-semibold text-gray-950">Rp {formatCurrency(item.amount)}</span>
+              <span className="shrink-0 font-semibold text-amber-700">Rp {formatCurrency(item.amount)}</span>
             </div>
           ))}
         </div>
@@ -737,12 +738,12 @@ function ProfitabilityRow({ name, revenue, cost, margin, marginRate }) {
           <p className="mt-1 text-xs text-gray-500">Revenue Rp {formatCurrency(revenue)} / Cost Rp {formatCurrency(cost)}</p>
         </div>
         <div className="text-right">
-          <p className={`text-sm font-bold ${positive ? 'text-gray-950' : 'text-red-600'}`}>Rp {formatCurrency(margin)}</p>
+          <p className={`text-sm font-bold ${positive ? 'text-slate-700' : 'text-red-600'}`}>Rp {formatCurrency(margin)}</p>
           <p className="mt-1 text-xs text-gray-500">{percent(marginRate)} margin</p>
         </div>
       </div>
       <div className="mt-3 h-2 overflow-hidden rounded-full bg-gray-200">
-        <div className="h-full rounded-full bg-gray-950" style={{ width: `${Math.max(0, Math.min(100, marginRate))}%` }} />
+        <div className="h-full rounded-full bg-slate-700" style={{ width: `${Math.max(0, Math.min(100, marginRate))}%` }} />
       </div>
     </div>
   );
@@ -758,7 +759,7 @@ function ProjectHealthRow({ project }) {
       <StatusPill label={project.invoiceStatus} />
       <StatusPill label={project.feeStatus} />
       <div className="sm:text-right">
-        <p className={`font-bold ${project.profitEstimate >= 0 ? 'text-gray-950' : 'text-red-600'}`}>Rp {formatCurrency(project.profitEstimate)}</p>
+        <p className={`font-bold ${project.profitEstimate >= 0 ? 'text-slate-700' : 'text-red-600'}`}>Rp {formatCurrency(project.profitEstimate)}</p>
         <p className="text-xs text-gray-500">{percent(project.marginEstimate)} est. margin</p>
       </div>
     </div>

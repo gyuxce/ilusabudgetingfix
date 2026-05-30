@@ -69,10 +69,18 @@ export default function Freelancers() {
       return;
     }
 
+    const defaultHourlyRate = parseInt(formData.default_hourly_rate, 10);
+    if (Number.isNaN(defaultHourlyRate) || defaultHourlyRate < 0) {
+      setFormError('Default hourly rate must be zero or greater.');
+      return;
+    }
+
     try {
       const payload = {
-        ...formData,
-        default_hourly_rate: parseInt(formData.default_hourly_rate, 10) || 0
+        name: formData.name.trim(),
+        specialization: formData.specialization.trim() || null,
+        default_hourly_rate: defaultHourlyRate,
+        status: formData.status
       };
 
       if (editingFreelancer) {

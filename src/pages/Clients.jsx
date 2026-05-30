@@ -75,10 +75,19 @@ export default function Clients() {
     }
 
     try {
+      const payload = {
+        company_name: formData.company_name.trim(),
+        pic_name: formData.pic_name.trim() || null,
+        phone_number: formData.phone_number.trim() || null,
+        location: formData.location.trim() || null,
+        status: formData.status,
+        notes: formData.notes.trim() || null
+      };
+
       if (editingClient) {
-        await updateClient.mutateAsync({ id: editingClient.id, ...formData });
+        await updateClient.mutateAsync({ id: editingClient.id, ...payload });
       } else {
-        await createClient.mutateAsync(formData);
+        await createClient.mutateAsync(payload);
       }
       setIsModalOpen(false);
     } catch (err) {

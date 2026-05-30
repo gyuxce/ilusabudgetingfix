@@ -8,7 +8,15 @@ export function StatCard({ label, value, count, icon: Icon, tone = 'gray', trend
     amber: 'bg-amber-50 text-amber-700 ring-amber-100',
     red: 'bg-red-50 text-red-700 ring-red-100',
     gray: 'bg-gray-100 text-gray-700 ring-gray-200',
-    blue: 'bg-blue-50 text-blue-700 ring-blue-100',
+    blue: 'bg-slate-100 text-slate-700 ring-slate-200',
+  };
+
+  const valueToneStyles = {
+    amber: 'text-amber-700',
+    red: 'text-red-600',
+    blue: 'text-slate-700',
+    gray: 'text-gray-800',
+    dark: 'text-gray-950',
   };
 
   const isNegative = value < 0;
@@ -24,7 +32,7 @@ export function StatCard({ label, value, count, icon: Icon, tone = 'gray', trend
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-gray-500">{label}</p>
-          <div className={`mt-3 text-2xl font-bold tracking-tight ${isNegative ? 'text-red-600' : 'text-gray-950'}`}>
+          <div className={`mt-3 text-2xl font-bold tracking-tight ${isNegative ? 'text-red-600' : valueToneStyles[tone] || 'text-gray-950'}`}>
             {isNegative ? '-' : ''}
             <AnimatedNumber value={Math.abs(value)} prefix="Rp " />
           </div>

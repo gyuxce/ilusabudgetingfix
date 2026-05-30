@@ -360,7 +360,7 @@ export default function Invoices() {
         const totalPaid = row.total_paid || 0;
         const amount = row.amount || 0;
         if (row.computed_status === 'paid') {
-          return <span className="text-gray-950 font-medium">Rp {formatCurrency(totalPaid)}</span>;
+          return <span className="text-slate-700 font-medium">Rp {formatCurrency(totalPaid)}</span>;
         } else if (row.computed_status === 'partial') {
           return <span className="text-amber-700 font-medium">Rp {formatCurrency(totalPaid)} / Rp {formatCurrency(amount)}</span>;
         }
@@ -451,7 +451,7 @@ export default function Invoices() {
           <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">
             Paid {(!filterPeriod || filterPeriod === 'all') ? '(All Time)' : `— ${formatPeriod(filterPeriod)}`}
           </p>
-          <div className="text-2xl font-semibold tracking-tight text-gray-950 leading-tight">
+          <div className="text-2xl font-semibold tracking-tight text-slate-700 leading-tight">
             <AnimatedNumber value={cardTotals.paid} prefix="Rp " />
           </div>
           <p className="text-xs text-gray-500 mt-1">{cardTotals.paidCount} paid</p>

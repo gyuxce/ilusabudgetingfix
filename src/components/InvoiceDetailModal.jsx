@@ -69,7 +69,7 @@ export function InvoiceDetailModal({ open, onClose, invoice, onRecordPayment }) 
         <div className="flex justify-between items-end mb-2">
           <div>
             <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Paid</p>
-            <p className="text-gray-950 font-semibold">Rp {formatCurrency(totalPaid)}</p>
+            <p className="text-slate-700 font-semibold">Rp {formatCurrency(totalPaid)}</p>
           </div>
           <div className="text-right">
             <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Remaining</p>
