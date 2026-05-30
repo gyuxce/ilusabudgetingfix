@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Wallet, Plus, Pencil, Trash2, Check, Undo2 } from 'lucide-react';
+import { Wallet, Plus, Pencil, Trash2, Check, Undo2, Printer } from 'lucide-react';
 import { format } from 'date-fns';
 import { 
   useFreelancerFees, 
@@ -22,6 +22,7 @@ import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
 import { Textarea } from '../components/ui/Textarea';
 import { Badge } from '../components/ui/Badge';
+import { PayslipModal } from '../components/PayslipModal';
 
 export default function Fees() {
   const { data: freelancers } = useFreelancers();
@@ -62,6 +63,7 @@ export default function Fees() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingFee, setEditingFee] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
+  const [payslipFee, setPayslipFee] = useState(null);
   const [successToast, setSuccessToast] = useState('');
 
   const todayStr = format(new Date(), 'yyyy-MM-dd');
@@ -345,6 +347,9 @@ export default function Fees() {
             <Undo2 size={14} />
           </Button>
         )}
+        <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50" title="Cetak Slip Gaji (Payslip)" onClick={(e) => { e.stopPropagation(); setPayslipFee(row); }}>
+          <Printer size={14} />
+        </Button>
         <Button variant="ghost" size="sm" onClick={(e) => handleOpenEdit(row, e)}>
           <Pencil size={14} />
         </Button>
@@ -640,6 +645,12 @@ export default function Fees() {
           {successToast}
         </div>
       )}
+
+      <PayslipModal 
+        open={!!payslipFee} 
+        onClose={() => setPayslipFee(null)} 
+        fee={payslipFee} 
+      />
     </>
   );
 }
