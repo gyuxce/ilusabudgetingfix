@@ -152,7 +152,7 @@ export default function Fees() {
     if (formData.fee_type === 'hourly') {
       return (parseFloat(formData.hourly_rate) || 0) * 
              (parseFloat(formData.hours_per_day) || 0) * 
-             ((parseFloat(formData.working_days) || 0) - (parseFloat(formData.off_days) || 0));
+             (parseFloat(formData.working_days) || 0);
     } else if (formData.fee_type === 'per_content') {
       return ((parseFloat(formData.rate_single_post) || 0) * (parseFloat(formData.qty_single_post) || 0)) +
              ((parseFloat(formData.rate_carousel) || 0) * (parseFloat(formData.qty_carousel) || 0)) +
@@ -242,13 +242,8 @@ export default function Fees() {
       const rate = parseFloat(formData.hourly_rate) || 0;
       const hours = parseFloat(formData.hours_per_day) || 0;
       const days = parseFloat(formData.working_days) || 0;
-      const offDays = parseFloat(formData.off_days) || 0;
       if (rate <= 0 || hours <= 0 || days <= 0) {
         setFormError('Hourly rate, hours per day, and working days must be greater than zero.');
-        return;
-      }
-      if (offDays > days) {
-        setFormError('Off days cannot be greater than working days.');
         return;
       }
     } else if (formData.fee_type === 'per_content') {
@@ -337,11 +332,10 @@ export default function Fees() {
     )},
     { key: 'calculation', label: 'Calculation', render: (row) => {
       if (row.fee_type === 'hourly') {
-        const activeDays = (row.working_days || 0) - (row.off_days || 0);
         return (
           <div className="text-xs text-gray-500 leading-relaxed">
-            <div>Rp {formatCurrency(row.hourly_rate)} × {row.hours_per_day}h/day × {activeDays}d</div>
-            <div className="text-[11px] text-gray-400">{row.working_days || 0} working days / {row.off_days || 0} off days</div>
+            <div>Rp {formatCurrency(row.hourly_rate)} × {row.hours_per_day}h/day × {row.working_days || 0}d</div>
+            <div className="text-[11px] text-gray-400">{row.off_days || 0} off days noted, not deducted</div>
           </div>
         );
       } else if (row.fee_type === 'fixed') {
@@ -592,7 +586,7 @@ export default function Fees() {
             <div className="text-2xl font-semibold tracking-tight text-emerald-700">Rp {formatCurrency(Math.max(0, liveFee))}</div>
             <p className="text-xs text-emerald-600/80 mt-1 font-mono">
               {formData.fee_type === 'hourly' 
-                ? `${formatCurrency(formData.hourly_rate || 0)} × ${formData.hours_per_day || 0} × (${formData.working_days || 0} - ${formData.off_days || 0}) = Rp ${formatCurrency(Math.max(0, liveFee))}` 
+                ? `${formatCurrency(formData.hourly_rate || 0)} × ${formData.hours_per_day || 0} × ${formData.working_days || 0} days = Rp ${formatCurrency(Math.max(0, liveFee))}${formData.off_days ? ` (${formData.off_days} off days noted)` : ''}` 
                 : formData.fee_type === 'per_content' 
                 ? [
                     `${formData.qty_single_post || 0} single × Rp ${formatCurrency(formData.rate_single_post || 0)}`,

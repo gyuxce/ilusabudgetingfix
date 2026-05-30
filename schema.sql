@@ -122,7 +122,7 @@ ALTER TABLE freelancer_fees DROP COLUMN IF EXISTS calculated_fee;
 ALTER TABLE freelancer_fees ADD COLUMN calculated_fee integer GENERATED ALWAYS AS (
   CASE 
     WHEN fee_type = 'hourly' THEN 
-      (COALESCE(hourly_rate, 0) * COALESCE(hours_per_day, 0) * (COALESCE(working_days, 0) - COALESCE(off_days, 0)))::integer
+      (COALESCE(hourly_rate, 0) * COALESCE(hours_per_day, 0) * COALESCE(working_days, 0))::integer
     WHEN fee_type = 'per_content' THEN 
       (COALESCE(rate_single_post, 0) * COALESCE(qty_single_post, 0)) +
       (COALESCE(rate_carousel, 0) * COALESCE(qty_carousel, 0)) +
