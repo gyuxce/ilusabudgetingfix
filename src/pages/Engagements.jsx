@@ -460,7 +460,7 @@ export default function Engagements() {
       
       {/* Toast */}
       {successToast && (
-        <div className="fixed bottom-4 right-4 bg-emerald-600 text-white px-4 py-3 rounded-md shadow-lg text-sm font-medium animate-bounce z-50">
+        <div className="fixed bottom-4 right-4 bg-gray-950 text-white px-4 py-3 rounded-md shadow-lg text-sm font-medium animate-bounce z-50">
           Engagement saved successfully!
         </div>
       )}

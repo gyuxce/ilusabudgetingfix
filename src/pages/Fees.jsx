@@ -24,6 +24,7 @@ import { Select } from '../components/ui/Select';
 import { Textarea } from '../components/ui/Textarea';
 import { Badge } from '../components/ui/Badge';
 import { PayslipModal } from '../components/PayslipModal';
+import { AnimatedNumber } from '../components/ui/AnimatedNumber';
 
 export default function Fees() {
   const [searchParams] = useSearchParams();
@@ -360,7 +361,7 @@ export default function Fees() {
     { key: 'actions', label: 'Actions', render: (row) => (
       <div className="flex gap-1" onClick={e => e.stopPropagation()}>
         {row.status !== 'paid' ? (
-          <Button variant="ghost" size="sm" className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" title="Mark Paid" onClick={async (e) => { e.stopPropagation(); await markPaid.mutateAsync(row.id); showToast('Marked as paid'); }}>
+          <Button variant="ghost" size="sm" className="text-gray-700 hover:text-gray-950 hover:bg-gray-100" title="Mark Paid" onClick={async (e) => { e.stopPropagation(); await markPaid.mutateAsync(row.id); showToast('Marked as paid'); }}>
             <Check size={14} />
           </Button>
         ) : (
@@ -413,14 +414,18 @@ export default function Fees() {
           <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">
             Total Fees {activeFilterLabel}
           </p>
-          <div className="text-2xl font-semibold tracking-tight text-gray-900 leading-tight">Rp {formatCurrency(cardTotals.totalAmt)}</div>
+          <div className="text-2xl font-semibold tracking-tight text-gray-900 leading-tight">
+            <AnimatedNumber value={cardTotals.totalAmt} prefix="Rp " />
+          </div>
           <p className="text-xs text-gray-500 mt-1">{cardTotals.totalCount} entries</p>
         </Card>
         <Card className="!p-4">
           <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">
             Paid {activeFilterLabel}
           </p>
-          <div className="text-2xl font-semibold tracking-tight text-emerald-600 leading-tight">Rp {formatCurrency(cardTotals.paidAmt)}</div>
+          <div className="text-2xl font-semibold tracking-tight text-gray-950 leading-tight">
+            <AnimatedNumber value={cardTotals.paidAmt} prefix="Rp " />
+          </div>
           <p className="text-xs text-gray-500 mt-1">{cardTotals.paidCount} paid</p>
         </Card>
         <Card className="!p-4">
@@ -428,7 +433,7 @@ export default function Fees() {
             Pending {activeFilterLabel}
           </p>
           <div className={`text-2xl font-semibold tracking-tight leading-tight ${cardTotals.pendingAmt > 0 ? 'text-amber-600' : 'text-gray-400'}`}>
-            Rp {formatCurrency(cardTotals.pendingAmt)}
+            <AnimatedNumber value={cardTotals.pendingAmt} prefix="Rp " />
           </div>
           <p className="text-xs text-gray-500 mt-1">{cardTotals.pendingCount} pending</p>
         </Card>
@@ -587,10 +592,12 @@ export default function Fees() {
             )}
           </div>
 
-          <div className="bg-emerald-50 border border-emerald-200 rounded-md p-3 my-4">
+          <div className="bg-gray-50 border border-gray-200 rounded-md p-3 my-4">
             <p className="text-xs text-gray-600 mb-0.5 uppercase tracking-wider font-medium">Calculated Fee</p>
-            <div className="text-2xl font-semibold tracking-tight text-emerald-700">Rp {formatCurrency(Math.max(0, liveFee))}</div>
-            <p className="text-xs text-emerald-600/80 mt-1 font-mono">
+            <div className="text-2xl font-semibold tracking-tight text-gray-950">
+              <AnimatedNumber value={Math.max(0, liveFee)} prefix="Rp " />
+            </div>
+            <p className="text-xs text-gray-600 mt-1 font-mono">
               {formData.fee_type === 'hourly' 
                 ? `${formatCurrency(formData.hourly_rate || 0)} × ${formData.hours_per_day || 0} × ${formData.working_days || 0} days = Rp ${formatCurrency(Math.max(0, liveFee))}${formData.off_days ? ` (${formData.off_days} off days noted)` : ''}` 
                 : formData.fee_type === 'per_content' 
@@ -666,7 +673,7 @@ export default function Fees() {
       </Modal>
 
       {successToast && (
-        <div className="fixed bottom-4 right-4 bg-emerald-600 text-white px-4 py-3 rounded-md shadow-lg text-sm font-medium animate-[bounce_0.5s_ease-in-out_1] z-50 transition-opacity">
+        <div className="fixed bottom-4 right-4 bg-gray-950 text-white px-4 py-3 rounded-md shadow-lg text-sm font-medium animate-[bounce_0.5s_ease-in-out_1] z-50 transition-opacity">
           {successToast}
         </div>
       )}

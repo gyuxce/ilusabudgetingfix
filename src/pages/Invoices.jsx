@@ -18,6 +18,7 @@ import { Textarea } from '../components/ui/Textarea';
 import { Badge } from '../components/ui/Badge';
 import { InvoiceDetailModal } from '../components/InvoiceDetailModal';
 import { RecordPaymentModal } from '../components/RecordPaymentModal';
+import { AnimatedNumber } from '../components/ui/AnimatedNumber';
 
 export default function Invoices() {
   const [searchParams] = useSearchParams();
@@ -359,7 +360,7 @@ export default function Invoices() {
         const totalPaid = row.total_paid || 0;
         const amount = row.amount || 0;
         if (row.computed_status === 'paid') {
-          return <span className="text-emerald-600 font-medium">Rp {formatCurrency(totalPaid)}</span>;
+          return <span className="text-gray-950 font-medium">Rp {formatCurrency(totalPaid)}</span>;
         } else if (row.computed_status === 'partial') {
           return <span className="text-amber-700 font-medium">Rp {formatCurrency(totalPaid)} / Rp {formatCurrency(amount)}</span>;
         }
@@ -385,7 +386,7 @@ export default function Invoices() {
     { key: 'actions', label: 'Actions', render: (row) => (
       <div className="flex gap-1" onClick={e => e.stopPropagation()}>
         {row.computed_status !== 'paid' && row.computed_status !== 'draft' && (
-          <Button variant="ghost" size="sm" className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" title="Record Payment" onClick={(e) => handleOpenPayment(row, e)}>
+          <Button variant="ghost" size="sm" className="text-gray-700 hover:text-gray-950 hover:bg-gray-100" title="Record Payment" onClick={(e) => handleOpenPayment(row, e)}>
             <CreditCard size={14} />
           </Button>
         )}
@@ -441,14 +442,18 @@ export default function Invoices() {
           <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">
             Total {(!filterPeriod || filterPeriod === 'all') ? '(All Time)' : `— ${formatPeriod(filterPeriod)}`}
           </p>
-          <div className="text-2xl font-semibold tracking-tight text-gray-900 leading-tight">Rp {formatCurrency(cardTotals.total)}</div>
+          <div className="text-2xl font-semibold tracking-tight text-gray-900 leading-tight">
+            <AnimatedNumber value={cardTotals.total} prefix="Rp " />
+          </div>
           <p className="text-xs text-gray-500 mt-1">{cardTotals.totalCount} invoices</p>
         </Card>
         <Card className="!p-4">
           <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">
             Paid {(!filterPeriod || filterPeriod === 'all') ? '(All Time)' : `— ${formatPeriod(filterPeriod)}`}
           </p>
-          <div className="text-2xl font-semibold tracking-tight text-emerald-600 leading-tight">Rp {formatCurrency(cardTotals.paid)}</div>
+          <div className="text-2xl font-semibold tracking-tight text-gray-950 leading-tight">
+            <AnimatedNumber value={cardTotals.paid} prefix="Rp " />
+          </div>
           <p className="text-xs text-gray-500 mt-1">{cardTotals.paidCount} paid</p>
         </Card>
         <Card className="!p-4">
@@ -456,7 +461,7 @@ export default function Invoices() {
             Outstanding {(!filterPeriod || filterPeriod === 'all') ? '(All Time)' : `— ${formatPeriod(filterPeriod)}`}
           </p>
           <div className={`text-2xl font-semibold tracking-tight leading-tight ${cardTotals.outstanding > 0 ? 'text-amber-600' : 'text-gray-400'}`}>
-            Rp {formatCurrency(cardTotals.outstanding)}
+            <AnimatedNumber value={cardTotals.outstanding} prefix="Rp " />
           </div>
           <p className="text-xs text-gray-500 mt-1">{cardTotals.outstandingCount} unpaid</p>
         </Card>
@@ -619,8 +624,8 @@ export default function Invoices() {
               onChange={e => setFormData({...formData, amount: e.target.value})}
             />
             <p className="text-xs text-gray-500 mt-1">Auto-filled from engagement (you can edit if needed)</p>
-            <p className="text-xs mt-1 uppercase tracking-wider font-medium text-emerald-600">
-              = Rp {formatCurrency(parseInt(formData.amount, 10) || 0)}
+            <p className="text-xs mt-1 uppercase tracking-wider font-medium text-gray-700">
+              = <AnimatedNumber value={parseInt(formData.amount, 10) || 0} prefix="Rp " />
             </p>
           </div>
 
@@ -812,7 +817,7 @@ export default function Invoices() {
 
       {/* TOAST */}
       {successToast && (
-        <div className="fixed bottom-4 right-4 bg-emerald-600 text-white px-4 py-3 rounded-md shadow-lg text-sm font-medium animate-[bounce_0.5s_ease-in-out_1] z-50 transition-opacity">
+        <div className="fixed bottom-4 right-4 bg-gray-950 text-white px-4 py-3 rounded-md shadow-lg text-sm font-medium animate-[bounce_0.5s_ease-in-out_1] z-50 transition-opacity">
           {successToast}
         </div>
       )}

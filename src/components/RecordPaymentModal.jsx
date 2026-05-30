@@ -117,7 +117,7 @@ export function RecordPaymentModal({ open, onClose, invoice, onSuccess }) {
              value={formData.amount} 
              onChange={e => setFormData({...formData, amount: e.target.value})} 
            />
-           <p className="text-xs mt-1 font-medium text-emerald-600 uppercase tracking-wider">
+           <p className="text-xs mt-1 font-medium text-gray-700 uppercase tracking-wider">
              = Rp {formatCurrency(parseInt(formData.amount, 10) || 0)}
            </p>
         </div>

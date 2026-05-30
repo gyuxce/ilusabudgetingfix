@@ -30,7 +30,7 @@ export default function Login() {
     <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4 font-sans text-gray-900">
       <div className="w-full max-w-md rounded-lg bg-white p-8 border border-gray-200 shadow-sm">
         <div className="mb-8 flex flex-col items-center text-center">
-          <div className="w-10 h-10 bg-emerald-600 rounded-md flex flex-shrink-0 items-center justify-center text-white mb-4">
+          <div className="w-10 h-10 bg-gray-950 rounded-md flex flex-shrink-0 items-center justify-center text-white mb-4">
             <Briefcase size={20} />
           </div>
           <h1 className="text-xl font-semibold tracking-tight text-gray-900">Ilusa Budget Controlling</h1>
@@ -51,7 +51,7 @@ export default function Login() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600"
+              className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-950 focus:outline-none focus:ring-1 focus:ring-gray-950"
             />
           </div>
           
@@ -62,14 +62,14 @@ export default function Login() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600"
+              className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-950 focus:outline-none focus:ring-1 focus:ring-gray-950"
             />
           </div>
 
           <button
             type="submit"
             disabled={isSubmitting}
-            className="mt-2 flex w-full justify-center rounded-md border border-transparent bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="mt-2 flex w-full justify-center rounded-md border border-transparent bg-gray-950 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-950 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? 'Signing in...' : 'Sign in'}
           </button>

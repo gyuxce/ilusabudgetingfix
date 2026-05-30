@@ -2,9 +2,9 @@ import { motion } from 'motion/react';
 import { ArrowDownRight, ArrowUpRight } from 'lucide-react';
 import { AnimatedNumber } from './AnimatedNumber';
 
-export function StatCard({ label, value, count, icon: Icon, tone = 'emerald', trend, delay = 0 }) {
+export function StatCard({ label, value, count, icon: Icon, tone = 'gray', trend, delay = 0 }) {
   const toneStyles = {
-    emerald: 'bg-emerald-50 text-emerald-700 ring-emerald-100',
+    dark: 'bg-gray-950 text-white ring-gray-950',
     amber: 'bg-amber-50 text-amber-700 ring-amber-100',
     red: 'bg-red-50 text-red-700 ring-red-100',
     gray: 'bg-gray-100 text-gray-700 ring-gray-200',
@@ -30,7 +30,7 @@ export function StatCard({ label, value, count, icon: Icon, tone = 'emerald', tr
           </div>
         </div>
         {Icon && (
-          <div className={`flex h-10 w-10 items-center justify-center rounded-lg ring-1 ${toneStyles[tone] || toneStyles.emerald}`}>
+          <div className={`flex h-10 w-10 items-center justify-center rounded-lg ring-1 ${toneStyles[tone] || toneStyles.gray}`}>
             <Icon size={19} />
           </div>
         )}
@@ -38,7 +38,7 @@ export function StatCard({ label, value, count, icon: Icon, tone = 'emerald', tr
       <div className="mt-4 flex items-center justify-between gap-3 text-xs">
         <span className="text-gray-500">{count}</span>
         {trend && (
-          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 font-medium ${isNegative ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>
+          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 font-medium ${isNegative ? 'bg-red-50 text-red-700' : 'bg-gray-100 text-gray-800'}`}>
             <TrendIcon size={13} />
             {trend}
           </span>

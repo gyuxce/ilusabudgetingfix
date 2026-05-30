@@ -65,11 +65,11 @@ export function InvoiceDetailModal({ open, onClose, invoice, onRecordPayment }) 
         </div>
       </div>
 
-      <div className="bg-emerald-50 border border-emerald-200 rounded-md p-4 mb-6">
+      <div className="bg-gray-50 border border-gray-200 rounded-md p-4 mb-6">
         <div className="flex justify-between items-end mb-2">
           <div>
             <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Paid</p>
-            <p className="text-emerald-700 font-semibold">Rp {formatCurrency(totalPaid)}</p>
+            <p className="text-gray-950 font-semibold">Rp {formatCurrency(totalPaid)}</p>
           </div>
           <div className="text-right">
             <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Remaining</p>
@@ -81,7 +81,7 @@ export function InvoiceDetailModal({ open, onClose, invoice, onRecordPayment }) 
           </div>
         </div>
         <div className="h-2 bg-gray-200 rounded-full w-full overflow-hidden">
-          <div className="h-full bg-emerald-600" style={{ width: `${percent}%` }}></div>
+          <div className="h-full bg-gray-950" style={{ width: `${percent}%` }}></div>
         </div>
       </div>
 
