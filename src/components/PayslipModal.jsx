@@ -1,8 +1,9 @@
 import { Modal } from './ui/Modal';
 import { Button } from './ui/Button';
-import { Printer } from 'lucide-react';
+import { Printer, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { formatPeriod } from '../lib/utils';
+import { toPng } from 'html-to-image';
 
 export function PayslipModal({ open, onClose, matchingFees }) {
   if (!matchingFees || matchingFees.length === 0) return null;
@@ -12,6 +13,33 @@ export function PayslipModal({ open, onClose, matchingFees }) {
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleDownloadPNG = () => {
+    const node = document.getElementById('printable-payslip');
+    if (!node) return;
+
+    // Convert HTML element to PNG with fixed clean styling for exact 1:1 image look
+    toPng(node, {
+      backgroundColor: '#ffffff',
+      style: {
+        margin: '0',
+        padding: '32px',
+        boxShadow: 'none',
+        border: '1px solid #000000',
+        width: '700px', // Ukuran ideal 1:1 / proporsional untuk dikirim via WhatsApp
+        height: 'auto',
+      }
+    })
+    .then((dataUrl) => {
+      const link = document.createElement('a');
+      link.download = `slip-gaji-${primaryFee.freelancer?.name || 'freelancer'}-${primaryFee.period_month}.png`;
+      link.href = dataUrl;
+      link.click();
+    })
+    .catch((error) => {
+      console.error('Failed to generate PNG image', error);
+    });
   };
 
   const todayStr = format(new Date(), 'MMM dd, yyyy');
@@ -32,6 +60,10 @@ export function PayslipModal({ open, onClose, matchingFees }) {
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>Tutup</Button>
+          <Button onClick={handleDownloadPNG} className="gap-2 bg-blue-600 hover:bg-blue-700 text-white border-blue-600 hover:border-blue-700">
+            <Download size={16} />
+            Unduh Gambar (PNG)
+          </Button>
           <Button onClick={handlePrint} className="gap-2">
             <Printer size={16} />
             Cetak / Simpan PDF
