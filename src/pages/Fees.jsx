@@ -88,27 +88,57 @@ export default function Fees() {
   });
   const [formError, setFormError] = useState('');
 
-  const cardsBase = useMemo(() => {
+  // Extract unique engagement options directly from the fees records to prevent duplicate label mismatches
+  const uniqueEngagementOptions = useMemo(() => {
     if (!fees) return [];
-    if (!filterPeriod || filterPeriod === 'all') return fees;
-    return fees.filter(r => r.period_month === filterPeriod);
-  }, [fees, filterPeriod]);
+    const seen = new Set();
+    const options = [];
+    
+    fees.forEach(fee => {
+      const eng = fee.engagement;
+      if (eng && eng.id && !seen.has(eng.id)) {
+        seen.add(eng.id);
+        const label = `${eng.client?.company_name || '—'} - ${eng.service?.name || '—'}`;
+        options.push({ value: eng.id, label });
+      }
+    });
+    
+    return options.sort((a, b) => a.label.localeCompare(b.label));
+  }, [fees]);
 
+  // Construct premium dynamic active filter label for cards
+  const activeFilterLabel = useMemo(() => {
+    const parts = [];
+    if (filterPeriod && filterPeriod !== 'all') parts.push(formatPeriod(filterPeriod));
+    if (filterStatus && filterStatus !== 'all') parts.push(filterStatus === 'paid' ? 'Paid' : 'Pending');
+    if (filterFreelancer && filterFreelancer !== 'all') {
+      const fl = freelancers?.find(f => f.id === filterFreelancer);
+      if (fl) parts.push(fl.name);
+    }
+    if (filterEngagement && filterEngagement !== 'all') {
+      const eng = uniqueEngagementOptions.find(e => e.value === filterEngagement);
+      if (eng) parts.push(eng.label.split(' - ')[0]); // Use client name part
+    }
+    
+    return parts.length > 0 ? `(${parts.join(' · ')})` : '(All Time)';
+  }, [filterPeriod, filterStatus, filterFreelancer, filterEngagement, freelancers, uniqueEngagementOptions]);
+
+  // Calculate card totals based on ALL active filters (responds dynamically to freelancer, status, period, etc.)
   const cardTotals = useMemo(() => {
-    const totalAmt = cardsBase.reduce((sum, r) => sum + (r.calculated_fee || 0), 0);
-    const paidAmt = cardsBase
+    const totalAmt = filteredRows.reduce((sum, r) => sum + (r.calculated_fee || 0), 0);
+    const paidAmt = filteredRows
       .filter(r => r.status === 'paid')
       .reduce((sum, r) => sum + (r.calculated_fee || 0), 0);
-    const pendingAmt = cardsBase
+    const pendingAmt = filteredRows
       .filter(r => r.status === 'pending')
       .reduce((sum, r) => sum + (r.calculated_fee || 0), 0);
     
-    const totalCount = cardsBase.length;
-    const paidCount = cardsBase.filter(r => r.status === 'paid').length;
-    const pendingCount = cardsBase.filter(r => r.status === 'pending').length;
+    const totalCount = filteredRows.length;
+    const paidCount = filteredRows.filter(r => r.status === 'paid').length;
+    const pendingCount = filteredRows.filter(r => r.status === 'pending').length;
     
     return { totalAmt, paidAmt, pendingAmt, totalCount, paidCount, pendingCount };
-  }, [cardsBase]);
+  }, [filteredRows]);
 
   const liveFee = useMemo(() => {
     if (formData.fee_type === 'hourly') {
@@ -355,21 +385,21 @@ export default function Fees() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <Card className="!p-4">
           <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">
-            Total Fees {(!filterPeriod || filterPeriod === 'all') ? '(All Time)' : `— ${formatPeriod(filterPeriod)}`}
+            Total Fees {activeFilterLabel}
           </p>
           <div className="text-2xl font-semibold tracking-tight text-gray-900 leading-tight">Rp {formatCurrency(cardTotals.totalAmt)}</div>
           <p className="text-xs text-gray-500 mt-1">{cardTotals.totalCount} entries</p>
         </Card>
         <Card className="!p-4">
           <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">
-            Paid {(!filterPeriod || filterPeriod === 'all') ? '(All Time)' : `— ${formatPeriod(filterPeriod)}`}
+            Paid {activeFilterLabel}
           </p>
           <div className="text-2xl font-semibold tracking-tight text-emerald-600 leading-tight">Rp {formatCurrency(cardTotals.paidAmt)}</div>
           <p className="text-xs text-gray-500 mt-1">{cardTotals.paidCount} paid</p>
         </Card>
         <Card className="!p-4">
           <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">
-            Pending {(!filterPeriod || filterPeriod === 'all') ? '(All Time)' : `— ${formatPeriod(filterPeriod)}`}
+            Pending {activeFilterLabel}
           </p>
           <div className={`text-2xl font-semibold tracking-tight leading-tight ${cardTotals.pendingAmt > 0 ? 'text-amber-600' : 'text-gray-400'}`}>
             Rp {formatCurrency(cardTotals.pendingAmt)}
@@ -412,7 +442,7 @@ export default function Fees() {
           onChange={e => setFilterEngagement(e.target.value)}
           options={[
             { value: 'all', label: 'All engagements' },
-            ...(engagements?.map(e => ({ value: e.id, label: `${e.client?.company_name} - ${e.service?.name}` })) || [])
+            ...uniqueEngagementOptions
           ]}
           className="w-56"
         />
