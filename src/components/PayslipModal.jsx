@@ -39,7 +39,12 @@ export function PayslipModal({ open, onClose, matchingFees }) {
       return {
         rate: `Rp ${formatCurrency(feeItem.hourly_rate)}`,
         quantity: `${feeItem.hours_per_day || 0}h/day x ${activeDays} days`,
-        details: [`${feeItem.working_days || 0} working days`, `${feeItem.off_days || 0} off days`],
+        details: [
+          `Rate Rp ${formatCurrency(feeItem.hourly_rate)}`,
+          `${feeItem.hours_per_day || 0}h/day x ${activeDays} days`,
+          `${feeItem.working_days || 0} working days`,
+          `${feeItem.off_days || 0} off days`,
+        ],
       };
     }
 
@@ -47,7 +52,7 @@ export function PayslipModal({ open, onClose, matchingFees }) {
       return {
         rate: 'Fixed fee',
         quantity: '1 period',
-        details: [],
+        details: ['Fixed amount per project'],
       };
     }
 
@@ -85,8 +90,6 @@ export function PayslipModal({ open, onClose, matchingFees }) {
             <strong>${escapeHtml(description)}</strong>
             ${details ? `<span>${escapeHtml(details)}</span>` : ''}
           </td>
-          <td class="right">${escapeHtml(breakdown.rate)}</td>
-          <td class="right">${escapeHtml(breakdown.quantity)}</td>
           <td class="right strong">Rp ${formatCurrency(feeItem.calculated_fee)}</td>
         </tr>
       `;
@@ -313,9 +316,7 @@ export function PayslipModal({ open, onClose, matchingFees }) {
                   <tr>
                     <th style="width: 34px;">#</th>
                     <th>Description</th>
-                    <th class="right" style="width: 98px;">Unit Rate</th>
-                    <th class="right" style="width: 112px;">Count / Days</th>
-                    <th class="right" style="width: 112px;">Amount</th>
+                    <th class="right" style="width: 132px;">Amount</th>
                   </tr>
                 </thead>
                 <tbody>${rows}</tbody>
@@ -534,8 +535,6 @@ export function PayslipModal({ open, onClose, matchingFees }) {
                     <tr>
                       <th className="w-10 px-3 py-3 font-semibold">#</th>
                       <th className="px-3 py-3 font-semibold">Description</th>
-                      <th className="w-32 px-3 py-3 text-right font-semibold">Unit Rate</th>
-                      <th className="w-36 px-3 py-3 text-right font-semibold">Count / Days</th>
                       <th className="w-36 px-3 py-3 text-right font-semibold">Amount</th>
                     </tr>
                   </thead>
@@ -543,21 +542,20 @@ export function PayslipModal({ open, onClose, matchingFees }) {
                     {matchingFees.map((feeItem, idx) => {
                       const breakdown = getFeeBreakdown(feeItem);
                       const description = `${feeItem.engagement?.client?.company_name || '-'} - ${feeItem.engagement?.service?.name || '-'}`;
+                      const details = [
+                        ...breakdown.details,
+                        feeItem.notes ? `Note: ${feeItem.notes}` : '',
+                      ].filter(Boolean);
 
                       return (
                         <tr key={feeItem.id} className="align-top">
                           <td className="px-3 py-4 font-semibold text-gray-500">{idx + 1}</td>
                           <td className="px-3 py-4">
                             <p className="font-semibold text-gray-950">{description}</p>
-                            {breakdown.details.length > 0 && (
-                              <p className="mt-1 text-[11px] leading-5 text-gray-500">{breakdown.details.join(' / ')}</p>
-                            )}
-                            {feeItem.notes && (
-                              <p className="mt-1 text-[11px] italic leading-5 text-gray-500">Note: {feeItem.notes}</p>
+                            {details.length > 0 && (
+                              <p className="mt-1 text-[11px] leading-5 text-gray-500">{details.join(' / ')}</p>
                             )}
                           </td>
-                          <td className="px-3 py-4 text-right font-medium text-gray-700">{breakdown.rate}</td>
-                          <td className="px-3 py-4 text-right text-gray-600">{breakdown.quantity}</td>
                           <td className="px-3 py-4 text-right font-bold text-gray-950">Rp {formatCurrency(feeItem.calculated_fee)}</td>
                         </tr>
                       );
