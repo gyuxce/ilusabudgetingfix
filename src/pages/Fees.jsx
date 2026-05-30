@@ -1,6 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Wallet, Plus, Pencil, Trash2, Check, Undo2, Printer } from 'lucide-react';
 import { format } from 'date-fns';
+import { useSearchParams } from 'react-router-dom';
 import { 
   useFreelancerFees, 
   useCreateFreelancerFee, 
@@ -25,11 +26,12 @@ import { Badge } from '../components/ui/Badge';
 import { PayslipModal } from '../components/PayslipModal';
 
 export default function Fees() {
+  const [searchParams] = useSearchParams();
   const { data: freelancers } = useFreelancers();
   const { data: engagements } = useEngagements();
 
   const [filterPeriod, setFilterPeriod] = useState('all');
-  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterStatus, setFilterStatus] = useState(searchParams.get('status') || 'all');
   const [filterFreelancer, setFilterFreelancer] = useState('all');
   const [filterEngagement, setFilterEngagement] = useState('all');
 
@@ -65,6 +67,10 @@ export default function Fees() {
   const [deleteId, setDeleteId] = useState(null);
   const [payslipFee, setPayslipFee] = useState(null);
   const [successToast, setSuccessToast] = useState('');
+
+  useEffect(() => {
+    setFilterStatus(searchParams.get('status') || 'all');
+  }, [searchParams]);
 
   const todayStr = format(new Date(), 'yyyy-MM-dd');
   
@@ -436,7 +442,7 @@ export default function Fees() {
             { value: 'all', label: 'All months' },
             ...lastNMonths(12)
           ]}
-          className="w-48"
+          className="w-full sm:w-48"
         />
         <Select 
           value={filterStatus}
@@ -446,7 +452,7 @@ export default function Fees() {
             { value: 'pending', label: 'Pending' },
             { value: 'paid', label: 'Paid' }
           ]}
-          className="w-40"
+          className="w-full sm:w-40"
         />
         <Select 
           value={filterFreelancer}
@@ -455,7 +461,7 @@ export default function Fees() {
             { value: 'all', label: 'All freelancers' },
             ...(freelancers?.map(f => ({ value: f.id, label: f.name })) || [])
           ]}
-          className="w-48"
+          className="w-full sm:w-48"
         />
         <Select 
           value={filterEngagement}
@@ -464,7 +470,7 @@ export default function Fees() {
             { value: 'all', label: 'All engagements' },
             ...uniqueEngagementOptions
           ]}
-          className="w-56"
+          className="w-full sm:w-56"
         />
       </div>
 

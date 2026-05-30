@@ -1,6 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { FileText, Plus, Calendar, Pencil, Trash2, CreditCard, Search } from 'lucide-react';
 import { format } from 'date-fns';
+import { useSearchParams } from 'react-router-dom';
 import { useInvoices, useCreateInvoice, useCreateInvoicesBulk, useUpdateInvoice, useDeleteInvoice } from '../lib/queries/invoices';
 import { useEngagements } from '../lib/queries/engagements';
 import { useClients } from '../lib/queries/clients';
@@ -19,12 +20,13 @@ import { InvoiceDetailModal } from '../components/InvoiceDetailModal';
 import { RecordPaymentModal } from '../components/RecordPaymentModal';
 
 export default function Invoices() {
+  const [searchParams] = useSearchParams();
   const { data: clients } = useClients();
   const { data: engagements } = useEngagements();
 
   const [search, setSearch] = useState('');
   const [filterPeriod, setFilterPeriod] = useState('all');
-  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterStatus, setFilterStatus] = useState(searchParams.get('status') || 'all');
   const [filterClient, setFilterClient] = useState('all');
 
   // One query for all invoices (summary + table)
@@ -43,6 +45,10 @@ export default function Invoices() {
   
   const [detailInvoice, setDetailInvoice] = useState(null);
   const [paymentInvoice, setPaymentInvoice] = useState(null);
+
+  useEffect(() => {
+    setFilterStatus(searchParams.get('status') || 'all');
+  }, [searchParams]);
 
   // Invoice Form
   const defaultIssueDate = format(new Date(), 'yyyy-MM-dd');
@@ -473,7 +479,7 @@ export default function Invoices() {
             { value: 'all', label: 'All months' },
             ...lastNMonths(12)
           ]}
-          className="w-48"
+          className="w-full sm:w-48"
         />
         <Select 
           value={filterStatus}
@@ -486,7 +492,7 @@ export default function Invoices() {
             { value: 'paid', label: 'Paid' },
             { value: 'overdue', label: 'Overdue' }
           ]}
-          className="w-40"
+          className="w-full sm:w-40"
         />
         <Select 
           value={filterClient}
@@ -495,7 +501,7 @@ export default function Invoices() {
             { value: 'all', label: 'All clients' },
             ...(clients?.map(c => ({ value: c.id, label: c.company_name })) || [])
           ]}
-          className="w-56"
+          className="w-full sm:w-56"
         />
       </div>
 

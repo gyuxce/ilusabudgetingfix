@@ -1,20 +1,54 @@
 export function DataTable({ columns, rows, onRowClick, emptyMessage }) {
   if (!rows || rows.length === 0) {
     return (
-      <div className="border border-gray-200 rounded-lg bg-white p-12 flex items-center justify-center text-center text-sm text-gray-500 shadow-sm">
+      <div className="flex items-center justify-center rounded-xl border border-gray-200 bg-white p-12 text-center text-sm text-gray-500 shadow-sm">
         {emptyMessage || 'No data available'}
       </div>
     );
   }
 
   return (
-    <div className="border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm">
-      <div className="overflow-x-auto">
+    <>
+      <div className="grid gap-3 md:hidden">
+        {rows.map((row, rowIndex) => {
+          const actionColumn = columns.find((col) => col.key === 'actions');
+          const displayColumns = columns.filter((col) => col.key !== 'actions');
+
+          return (
+            <div
+              key={row.id || rowIndex}
+              onClick={() => {
+                if (onRowClick) onRowClick(row);
+              }}
+              className={`rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-all ${onRowClick ? 'cursor-pointer active:scale-[0.99]' : ''}`}
+            >
+              <div className="space-y-3">
+                {displayColumns.map((col, colIndex) => (
+                  <div key={col.key || colIndex} className="flex items-start justify-between gap-4">
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-400">{col.label}</span>
+                    <div className="min-w-0 max-w-[65%] text-right text-sm text-gray-900">
+                      {col.render ? col.render(row) : row[col.key]}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {actionColumn && (
+                <div className="mt-4 flex justify-end border-t border-gray-100 pt-3" onClick={(e) => e.stopPropagation()}>
+                  {actionColumn.render ? actionColumn.render(row) : row[actionColumn.key]}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="hidden overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm md:block">
+        <div className="overflow-x-auto">
         <table className="w-full text-sm text-left">
-          <thead className="bg-gray-50 border-b border-gray-200">
+          <thead className="border-b border-gray-200 bg-gray-50">
             <tr>
               {columns.map((col, i) => (
-                <th key={col.key || i} className="px-4 py-2.5 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th key={col.key || i} className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-gray-500">
                   {col.label}
                 </th>
               ))}
@@ -27,7 +61,7 @@ export function DataTable({ columns, rows, onRowClick, emptyMessage }) {
                 onClick={(e) => {
                   if (onRowClick) onRowClick(row);
                 }}
-                className={`border-b border-gray-100 last:border-0 text-gray-900 transition-colors ${onRowClick ? 'cursor-pointer hover:bg-gray-50' : ''}`}
+                className={`border-b border-gray-100 text-gray-900 transition-colors last:border-0 ${onRowClick ? 'cursor-pointer hover:bg-gray-50' : ''}`}
               >
                 {columns.map((col, colIndex) => (
                   <td key={colIndex} className="px-4 py-3 whitespace-nowrap">
@@ -38,7 +72,8 @@ export function DataTable({ columns, rows, onRowClick, emptyMessage }) {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

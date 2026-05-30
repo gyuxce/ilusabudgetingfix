@@ -1,5 +1,5 @@
 export function Button({ variant = 'primary', size = 'md', children, className = '', ...rest }) {
-  const baseStyle = "inline-flex items-center justify-center font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
+  const baseStyle = "inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-1 active:scale-[0.98]";
   
   const sizeStyles = {
     sm: "px-2.5 py-1.5 text-xs",
@@ -7,9 +7,9 @@ export function Button({ variant = 'primary', size = 'md', children, className =
   };
   
   const variantStyles = {
-    primary: "bg-emerald-600 hover:bg-emerald-700 text-white",
-    secondary: "bg-white border border-gray-300 hover:bg-gray-50 text-gray-700",
-    danger: "bg-red-600 hover:bg-red-700 text-white",
+    primary: "bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-900/10",
+    secondary: "bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 shadow-sm",
+    danger: "bg-red-600 hover:bg-red-700 text-white shadow-sm shadow-red-900/10",
     ghost: "hover:bg-gray-100 text-gray-700",
   };
 

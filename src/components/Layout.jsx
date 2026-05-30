@@ -1,79 +1,125 @@
-import { NavLink, Outlet } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Building2, 
-  Users, 
-  Package, 
-  Briefcase, 
-  FileText, 
-  Wallet 
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { motion } from 'motion/react';
+import {
+  LayoutDashboard,
+  Building2,
+  Users,
+  Package,
+  Briefcase,
+  FileText,
+  Wallet,
+  LogOut,
 } from 'lucide-react';
 import { useAuth } from '../lib/AuthContext';
 
-export default function Layout() {
-  const { session, signOut } = useAuth();
-  
-  const navItems = [
-    { to: '/', label: 'Dashboard', icon: LayoutDashboard },
-    { to: '/clients', label: 'Clients', icon: Building2 },
-    { to: '/freelancers', label: 'Freelancers', icon: Users },
-    { to: '/services', label: 'Services', icon: Package },
-    { to: '/engagements', label: 'Engagements', icon: Briefcase },
-    { to: '/invoices', label: 'Invoices', icon: FileText },
-    { to: '/fees', label: 'Fees', icon: Wallet },
-  ];
+const navItems = [
+  { to: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/clients', label: 'Clients', icon: Building2 },
+  { to: '/freelancers', label: 'Freelancers', icon: Users },
+  { to: '/services', label: 'Services', icon: Package },
+  { to: '/engagements', label: 'Engagements', icon: Briefcase },
+  { to: '/invoices', label: 'Invoices', icon: FileText },
+  { to: '/fees', label: 'Fees', icon: Wallet },
+];
+
+const mobileNavItems = navItems.filter((item) => ['/', '/clients', '/engagements', '/invoices', '/fees'].includes(item.to));
+
+function BrandMark() {
+  return (
+    <div className="flex items-center gap-3">
+      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-950 text-sm font-bold tracking-tight text-white shadow-sm">
+        IL
+      </div>
+      <div className="min-w-0">
+        <p className="truncate text-sm font-bold leading-none tracking-tight text-gray-950">Ilusa</p>
+        <p className="mt-1 truncate text-xs text-gray-500">Budget Controlling</p>
+      </div>
+    </div>
+  );
+}
+
+function NavItem({ item, compact = false }) {
+  const Icon = item.icon;
 
   return (
-    <div className="flex min-h-screen bg-gray-50 font-sans text-gray-900">
-      <aside className="flex w-56 flex-col bg-white border-r border-gray-200">
-        <div className="p-5 flex items-center gap-3">
-          <div className="w-8 h-8 flex-shrink-0 bg-emerald-600 rounded-md flex items-center justify-center text-white text-xs">
-            💼
-          </div>
-          <div className="flex flex-col">
-            <span className="font-semibold text-gray-900 leading-none">Ilusa</span>
-            <span className="text-xs text-gray-500 mt-1">Budget Controlling</span>
-          </div>
-        </div>
-        
-        <nav className="flex-1 px-3 py-2 space-y-0.5">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={({ isActive }) => 
-                  `flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-sm transition-colors ${
-                    isActive 
-                      ? 'bg-emerald-50 text-emerald-700 font-medium' 
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                  }`
-                }
-              >
-                <Icon size={16} />
-                {item.label}
-              </NavLink>
-            );
-          })}
+    <NavLink
+      key={item.to}
+      to={item.to}
+      end={item.to === '/'}
+      className={({ isActive }) =>
+        `group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all duration-200 ${
+          isActive
+            ? 'bg-gray-950 text-white shadow-sm'
+            : 'text-gray-600 hover:bg-white hover:text-gray-950 hover:shadow-sm'
+        } ${compact ? 'flex-col gap-1 px-2 py-2 text-[11px]' : ''}`
+      }
+    >
+      <Icon size={compact ? 18 : 17} />
+      <span className={compact ? 'leading-none' : ''}>{item.label}</span>
+    </NavLink>
+  );
+}
+
+export default function Layout() {
+  const { session, signOut } = useAuth();
+  const location = useLocation();
+  const currentItem = navItems.find((item) => item.to === location.pathname) || navItems[0];
+  const CurrentIcon = currentItem.icon;
+
+  return (
+    <div className="min-h-screen bg-gray-100 font-sans text-gray-950">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-gray-200 bg-gray-50/95 p-4 backdrop-blur lg:flex lg:flex-col">
+        <BrandMark />
+
+        <nav className="mt-8 flex-1 space-y-1">
+          {navItems.map((item) => (
+            <NavItem key={item.to} item={item} />
+          ))}
         </nav>
-        
-        <div className="border-t border-gray-200 p-3 flex flex-col gap-1">
-          <span className="text-xs text-gray-500 truncate" title={session?.user?.email}>
+
+        <div className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
+          <p className="truncate text-xs font-medium text-gray-900" title={session?.user?.email}>
             {session?.user?.email}
-          </span>
-          <button 
+          </p>
+          <button
             onClick={signOut}
-            className="text-xs text-left text-gray-600 hover:text-red-600 font-medium mt-1 transition-colors"
+            className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-xs font-medium text-gray-600 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600"
           >
+            <LogOut size={14} />
             Sign out
           </button>
         </div>
       </aside>
-      
-      <main className="flex-1 p-8 bg-gray-50 min-h-screen">
-        <Outlet />
+
+      <div className="sticky top-0 z-20 border-b border-gray-200 bg-white/90 px-4 py-3 backdrop-blur lg:hidden">
+        <div className="flex items-center justify-between gap-3">
+          <BrandMark />
+          <div className="flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-700">
+            <CurrentIcon size={14} />
+            {currentItem.label}
+          </div>
+        </div>
+      </div>
+
+      <main className="min-h-screen px-4 py-6 pb-28 sm:px-6 lg:ml-64 lg:px-8 lg:py-8">
+        <motion.div
+          key={location.pathname}
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+          className="mx-auto max-w-[1500px]"
+        >
+          <Outlet />
+        </motion.div>
       </main>
+
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-gray-200 bg-white/95 px-2 pb-2 pt-2 shadow-[0_-12px_30px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
+        <div className="mx-auto grid max-w-lg grid-cols-5 gap-1">
+          {mobileNavItems.map((item) => (
+            <NavItem key={item.to} item={item} compact />
+          ))}
+        </div>
+      </nav>
     </div>
   );
 }
