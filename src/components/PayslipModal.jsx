@@ -17,12 +17,10 @@ export function PayslipModal({ open, onClose, matchingFees }) {
   const todayStr = format(new Date(), 'MMM dd, yyyy');
   const periodStr = formatPeriod(primaryFee.period_month);
 
-  // Generate a clean professional slip number based on month period and freelancer name initials/ID
   const initials = primaryFee.freelancer?.name?.substring(0, 3).toUpperCase() || 'EMP';
   const yearMonth = primaryFee.period_month ? primaryFee.period_month.replace('-', '') : '202605';
   const slipNumber = `SLIP-${yearMonth}-${initials}`;
 
-  // Calculate consolidated sums
   const grandTotalGaji = matchingFees.reduce((sum, f) => sum + (f.calculated_fee || 0), 0);
 
   return (
@@ -41,11 +39,11 @@ export function PayslipModal({ open, onClose, matchingFees }) {
         </>
       }
     >
-      {/* CSS Masterclass untuk Tampilan Cetak Minimalis Kertas A4 Bersih Gaya Faktur/Kop */}
+      {/* CSS Masterclass Fluid Full-Width untuk Mengisi Kertas A4 Secara Sempurna Tanpa Menciut */}
       <style>{`
         @page {
           size: A4 portrait;
-          margin: 0 !important; /* Hilangkan URL, tanggal, dan nomor halaman browser */
+          margin: 15mm !important; /* Memberikan margin fisik kertas yang pas, otomatis menyembunyikan URL & Tanggal browser */
         }
         @media print {
           html, body {
@@ -53,31 +51,45 @@ export function PayslipModal({ open, onClose, matchingFees }) {
             padding: 0 !important;
             background: white !important;
             color: black !important;
-            font-family: 'Courier New', Courier, monospace !important; /* Font monospace untuk tampilan faktur klasik */
+            font-family: 'Courier New', Courier, monospace !important;
+            width: 100% !important;
+            height: auto !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
+          
+          /* Sembunyikan elemen web lainnya */
           body * {
             visibility: hidden !important;
           }
+          
+          /* Jadikan payslip meluas penuh mengisi margin A4 (tidak menciut menjadi kecil) */
           #printable-payslip, #printable-payslip * {
             visibility: visible !important;
           }
           #printable-payslip {
-            position: fixed !important;
-            left: 0 !important;
-            top: 0 !important;
-            width: 210mm !important; /* Lebar penuh A4 */
-            height: 297mm !important; /* Tinggi penuh A4 */
-            padding: 20mm 15mm !important; /* Margin halaman faktur standar */
-            box-sizing: border-box !important;
+            position: static !important; /* Mengalir normal mengikuti margin kertas */
+            width: 100% !important; /* Meluas 100% mengisi lebar area cetak */
+            max-width: 100% !important;
+            height: auto !important;
+            margin: 0 !important;
+            padding: 0 !important; /* Hilangkan padding ekstra agar konten bisa meluas maksimal */
             box-shadow: none !important;
             border: none !important;
             background: white !important;
             display: flex !important;
             flex-direction: column !important;
-            font-size: 10pt !important;
-            line-height: 1.4 !important;
+            font-size: 11pt !important; /* Perbesar basis font */
+          }
+          
+          /* Penyesuaian ukuran teks agar tampak tebal & mantap di kertas */
+          #printable-payslip h1 {
+            font-size: 18pt !important;
+            margin-bottom: 2pt !important;
+          }
+          #printable-payslip h2 {
+            font-size: 14pt !important;
+            margin-bottom: 10pt !important;
           }
           #printable-payslip .border-box {
             border: 1px solid black !important;
@@ -88,16 +100,19 @@ export function PayslipModal({ open, onClose, matchingFees }) {
           #printable-payslip .border-b-black {
             border-bottom: 1px solid black !important;
           }
-          #printable-payslip .border-r-black {
-            border-right: 1px solid black !important;
+          
+          /* Berikan margin-top pada footer cetak agar terpisah manis di bawah */
+          #printable-payslip .footer-box {
+            margin-top: 50mm !important; 
+            font-size: 10pt !important;
           }
         }
       `}</style>
 
-      {/* Payslip Card Preview - Gaya Faktur Monospace Bersih */}
+      {/* Payslip Card Preview */}
       <div 
         id="printable-payslip" 
-        className="bg-white p-8 font-mono text-gray-900 leading-relaxed text-sm select-none"
+        className="bg-white p-6 font-mono text-gray-900 leading-relaxed text-sm select-none"
         style={{ fontFamily: "'Courier New', Courier, monospace" }}
       >
         {/* TOP HEADER SECTION */}
@@ -156,7 +171,6 @@ export function PayslipModal({ open, onClose, matchingFees }) {
           {/* Table Body Rows */}
           <div className="divide-y divide-gray-300 text-xs">
             {matchingFees.map((feeItem, idx) => {
-              // Extract breakdown calculations cleanly per line
               let desc = `${feeItem.engagement?.client?.company_name} - ${feeItem.engagement?.service?.name}`;
               let rateStr = '—';
               let qtyStr = '—';
@@ -193,7 +207,6 @@ export function PayslipModal({ open, onClose, matchingFees }) {
                     <div className="w-32 text-right font-bold font-mono">Rp {formatCurrency(feeItem.calculated_fee)}</div>
                   </div>
 
-                  {/* Secondary breakdown display for per-content rates */}
                   {feeItem.fee_type === 'per_content' && (
                     <div className="pl-12 mt-1.5 space-y-0.5 text-[10px] text-gray-600 leading-relaxed border-l border-gray-400 ml-3">
                       {feeItem.qty_single_post > 0 && (
@@ -212,7 +225,7 @@ export function PayslipModal({ open, onClose, matchingFees }) {
             })}
           </div>
 
-          {/* Table Summary Rows (Aligned bottom right) */}
+          {/* Table Summary Rows */}
           <div className="border-t border-black bg-gray-50/50 py-2 px-3 text-xs leading-6">
             <div className="flex justify-end">
               <div className="w-48 text-right text-gray-600 font-bold">Subtotal:</div>
@@ -230,7 +243,7 @@ export function PayslipModal({ open, onClose, matchingFees }) {
         </div>
 
         {/* BOTTOM THANKS SECTION */}
-        <div className="footer-box mt-auto text-center text-xs text-gray-500">
+        <div className="footer-box mt-4 text-center text-xs text-gray-500">
           <p className="mb-2">***</p>
           <p className="italic">Thank you for your business & hard work.</p>
         </div>
