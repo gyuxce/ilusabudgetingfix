@@ -62,13 +62,14 @@ CREATE TABLE IF NOT EXISTS engagements (
 CREATE TABLE IF NOT EXISTS invoices (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     engagement_id uuid NOT NULL REFERENCES engagements(id) ON DELETE CASCADE,
+    billing_month text,
     period_month text,
     invoice_number text,
     amount integer NOT NULL,
     issue_date date NOT NULL,
     due_date date NOT NULL,
     paid_date date,
-    status text NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'sent', 'paid')),
+    status text NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'approved', 'sent', 'paid')),
     notes text,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now()
@@ -110,7 +111,7 @@ CREATE TABLE IF NOT EXISTS freelancer_fees (
     -- Fixed field
     fixed_amount integer,
     
-    status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'paid')),
+    status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'paid')),
     paid_date date,
     notes text,
     created_at timestamptz NOT NULL DEFAULT now(),
@@ -231,7 +232,44 @@ CREATE TABLE IF NOT EXISTS company_settings (
     CONSTRAINT singleton_check CHECK (id = 1)
 );
 
-INSERT INTO company_settings (id) VALUES (1) ON CONFLICT (id) DO NOTHING;
+-- ===== audit_logs =====
+CREATE TABLE IF NOT EXISTS audit_logs (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    entity_type text NOT NULL,
+    entity_id uuid,
+    action text NOT NULL,
+    actor_id uuid,
+    actor_email text,
+    metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+
+INSERT INTO company_settings (
+  id,
+  legal_name,
+  brand_name,
+  tagline,
+  city,
+  country,
+  email,
+  default_payment_terms
+) VALUES (
+  1,
+  'PT. Inovasi Langkah Usaha',
+  'Ilusa',
+  'Budget Controlling & Partnership Operations',
+  'Yogyakarta',
+  'Indonesia',
+  'partnership@ilusa.id',
+  'Please use the invoice number as payment reference and confirm payment to partnership@ilusa.id.'
+) ON CONFLICT (id) DO UPDATE SET
+  legal_name = COALESCE(company_settings.legal_name, EXCLUDED.legal_name),
+  brand_name = COALESCE(company_settings.brand_name, EXCLUDED.brand_name),
+  tagline = COALESCE(company_settings.tagline, EXCLUDED.tagline),
+  city = COALESCE(company_settings.city, EXCLUDED.city),
+  country = COALESCE(company_settings.country, EXCLUDED.country),
+  email = COALESCE(company_settings.email, EXCLUDED.email),
+  default_payment_terms = COALESCE(company_settings.default_payment_terms, EXCLUDED.default_payment_terms);
 
 
 -- ===== 2. Indexes =====
@@ -239,6 +277,7 @@ CREATE INDEX IF NOT EXISTS idx_engagements_client_id ON engagements(client_id);
 CREATE INDEX IF NOT EXISTS idx_engagements_status ON engagements(status);
 
 CREATE INDEX IF NOT EXISTS idx_invoices_engagement_id ON invoices(engagement_id);
+CREATE INDEX IF NOT EXISTS idx_invoices_billing_month ON invoices(billing_month);
 CREATE INDEX IF NOT EXISTS idx_invoices_period_month ON invoices(period_month);
 CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices(status);
 CREATE INDEX IF NOT EXISTS idx_invoices_due_date ON invoices(due_date);
@@ -250,6 +289,8 @@ CREATE INDEX IF NOT EXISTS idx_freelancer_fees_freelancer_id ON freelancer_fees(
 CREATE INDEX IF NOT EXISTS idx_freelancer_fees_engagement_id ON freelancer_fees(engagement_id);
 CREATE INDEX IF NOT EXISTS idx_freelancer_fees_period_month ON freelancer_fees(period_month);
 CREATE INDEX IF NOT EXISTS idx_freelancer_fees_status ON freelancer_fees(status);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_entity ON audit_logs(entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at);
 
 CREATE INDEX IF NOT EXISTS idx_proposals_client ON proposals(client_id);
 CREATE INDEX IF NOT EXISTS idx_proposals_status ON proposals(status);
@@ -359,6 +400,7 @@ ALTER TABLE proposals ENABLE ROW LEVEL SECURITY;
 ALTER TABLE proposal_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE documents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE company_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 
 -- Permissive Policies for Authenticated Users
 DROP POLICY IF EXISTS clients_authenticated_all ON clients;
@@ -394,13 +436,26 @@ CREATE POLICY documents_authenticated_all ON documents FOR ALL TO authenticated 
 DROP POLICY IF EXISTS company_settings_authenticated_all ON company_settings;
 CREATE POLICY company_settings_authenticated_all ON company_settings FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
+DROP POLICY IF EXISTS audit_logs_authenticated_all ON audit_logs;
+CREATE POLICY audit_logs_authenticated_all ON audit_logs FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
 
 -- ===== 5. Views =====
 
 -- ===== View: invoices dengan computed payment fields =====
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS billing_month text;
+ALTER TABLE invoices DROP CONSTRAINT IF EXISTS invoices_status_check;
+ALTER TABLE invoices ADD CONSTRAINT invoices_status_check CHECK (status IN ('draft', 'approved', 'sent', 'paid'));
+ALTER TABLE freelancer_fees DROP CONSTRAINT IF EXISTS freelancer_fees_status_check;
+ALTER TABLE freelancer_fees ADD CONSTRAINT freelancer_fees_status_check CHECK (status IN ('pending', 'approved', 'paid'));
+UPDATE invoices
+SET billing_month = to_char(issue_date, 'YYYY-MM')
+WHERE billing_month IS NULL AND issue_date IS NOT NULL;
+
 CREATE OR REPLACE VIEW invoices_with_payments AS
 SELECT 
   i.*,
+  COALESCE(i.billing_month, to_char(i.issue_date, 'YYYY-MM')) AS effective_billing_month,
   COALESCE(p.total_paid, 0) AS total_paid,
   (i.amount - COALESCE(p.total_paid, 0)) AS balance,
   p.payment_count,
@@ -409,6 +464,7 @@ SELECT
     WHEN i.status = 'draft' THEN 'draft'
     WHEN COALESCE(p.total_paid, 0) >= i.amount THEN 'paid'
     WHEN COALESCE(p.total_paid, 0) > 0 THEN 'partial'
+    WHEN i.status = 'approved' THEN 'approved'
     WHEN i.due_date < CURRENT_DATE THEN 'overdue'
     ELSE 'sent'
   END AS computed_status

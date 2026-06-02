@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../supabase';
+import { logAudit } from '../audit';
 
 export function useInvoices() {
   return useQuery({
@@ -19,6 +20,7 @@ export function useInvoices() {
         .order('due_date', { ascending: false });
 
       if (error) throw new Error(error.message);
+      await logAudit('invoice.created', 'invoice', data.id, { amount: data.amount, status: data.status });
       return data;
     }
   });
@@ -35,6 +37,11 @@ export function useInvoice(id) {
         .eq('id', id)
         .single();
       if (error) throw new Error(error.message);
+      await Promise.all((data || []).map((invoice) => logAudit('invoice.created_bulk', 'invoice', invoice.id, {
+        amount: invoice.amount,
+        billing_month: invoice.billing_month,
+        service_period: invoice.period_month,
+      })));
       return data;
     },
     enabled: !!id
@@ -51,6 +58,7 @@ export function useCreateInvoice() {
         .select()
         .single();
       if (error) throw new Error(error.message);
+      await logAudit('invoice.updated', 'invoice', data.id, updateData);
       return data;
     },
     onSuccess: () => {
@@ -107,10 +115,32 @@ export function useDeleteInvoice() {
         .delete()
         .eq('id', id);
       if (error) throw new Error(error.message);
+      await logAudit('invoice.deleted', 'invoice', id);
       return true;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
+    }
+  });
+}
+
+export function useSetInvoiceStatus() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, status }) => {
+      const { data, error } = await supabase
+        .from('invoices')
+        .update({ status })
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) throw new Error(error.message);
+      await logAudit(`invoice.${status}`, 'invoice', id, { status });
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      if (data) queryClient.invalidateQueries({ queryKey: ['invoice', data.id] });
     }
   });
 }

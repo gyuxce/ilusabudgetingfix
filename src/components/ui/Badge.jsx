@@ -1,9 +1,9 @@
 export function Badge({ variant = 'neutral', children, className = '' }) {
   const styles = {
-    success: "bg-gray-100 text-gray-800 ring-gray-200",
-    warning: "bg-amber-50 text-amber-700 ring-amber-100",
+    success: "bg-[#606C38]/12 text-[#283618] ring-[#606C38]/25",
+    warning: "bg-[#DDA15E]/20 text-[#BC6C25] ring-[#DDA15E]/35",
     danger: "bg-red-50 text-red-700 ring-red-100",
-    neutral: "bg-gray-100 text-gray-700 ring-gray-200",
+    neutral: "bg-[#FEFAE0] text-[#283618] ring-[#DDA15E]/35",
   };
 
   return (

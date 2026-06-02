@@ -1,5 +1,5 @@
 export function Button({ variant = 'primary', size = 'md', children, className = '', ...rest }) {
-  const baseStyle = "inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-gray-950 focus:ring-offset-1 active:scale-[0.98]";
+  const baseStyle = "inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[#606C38] focus:ring-offset-1 focus:ring-offset-[#FEFAE0] active:scale-[0.98]";
   
   const sizeStyles = {
     sm: "px-2.5 py-1.5 text-xs",
@@ -7,10 +7,10 @@ export function Button({ variant = 'primary', size = 'md', children, className =
   };
   
   const variantStyles = {
-    primary: "bg-gray-950 hover:bg-gray-800 text-white shadow-sm shadow-gray-950/10",
-    secondary: "bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 shadow-sm",
+    primary: "bg-[#283618] hover:bg-[#606C38] text-[#FEFAE0] shadow-sm shadow-[#283618]/15",
+    secondary: "bg-white/80 border border-[#DDA15E]/50 hover:bg-[#DDA15E]/15 text-[#283618] shadow-sm",
     danger: "bg-red-600 hover:bg-red-700 text-white shadow-sm shadow-red-900/10",
-    ghost: "hover:bg-gray-100 text-gray-700",
+    ghost: "hover:bg-[#DDA15E]/15 text-[#283618]",
   };
 
   return (

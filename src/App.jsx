@@ -10,6 +10,10 @@ import Services from './pages/Services';
 import Engagements from './pages/Engagements';
 import Invoices from './pages/Invoices';
 import Fees from './pages/Fees';
+import PayrollAnalytics from './pages/PayrollAnalytics';
+import ActivityLog from './pages/ActivityLog';
+import Settings from './pages/Settings';
+import MonthlyClose from './pages/MonthlyClose';
 
 export default function App() {
   return (
@@ -28,6 +32,10 @@ export default function App() {
         <Route path="engagements" element={<Engagements />} />
         <Route path="invoices" element={<Invoices />} />
         <Route path="fees" element={<Fees />} />
+        <Route path="payroll-analytics" element={<PayrollAnalytics />} />
+        <Route path="activity-log" element={<ActivityLog />} />
+        <Route path="settings" element={<Settings />} />
+        <Route path="monthly-close" element={<MonthlyClose />} />
       </Route>
       
       <Route path="*" element={<Navigate to="/" replace />} />

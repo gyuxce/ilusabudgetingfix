@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../supabase';
+import { logAudit } from '../audit';
 
 export function useFreelancerFees() {
   return useQuery({
@@ -15,6 +16,7 @@ export function useFreelancerFees() {
         .order('period_month', { ascending: false });
 
       if (error) throw new Error(error.message);
+      await logAudit('fee.created', 'freelancer_fee', data.id, { amount: data.calculated_fee, status: data.status });
       return data;
     }
   });
@@ -31,6 +33,7 @@ export function useFreelancerFee(id) {
         .eq('id', id)
         .single();
       if (error) throw new Error(error.message);
+      await logAudit('fee.updated', 'freelancer_fee', data.id, updateData);
       return data;
     },
     enabled: !!id
@@ -79,7 +82,21 @@ export function useDeleteFreelancerFee() {
     mutationFn: async (id) => {
       const { error } = await supabase.from('freelancer_fees').delete().eq('id', id);
       if (error) throw new Error(error.message);
+      await logAudit('fee.deleted', 'freelancer_fee', id);
       return true;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['freelancer_fees'] })
+  });
+}
+
+export function useApproveFee() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id) => {
+      const { data, error } = await supabase.from('freelancer_fees').update({ status: 'approved', paid_date: null }).eq('id', id).select().single();
+      if (error) throw new Error(error.message);
+      await logAudit('fee.approved', 'freelancer_fee', id);
+      return data;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['freelancer_fees'] })
   });
@@ -92,6 +109,7 @@ export function useMarkFeePaid() {
       const today = new Date().toISOString().split('T')[0];
       const { data, error } = await supabase.from('freelancer_fees').update({ status: 'paid', paid_date: today }).eq('id', id).select().single();
       if (error) throw new Error(error.message);
+      await logAudit('fee.paid', 'freelancer_fee', id, { paid_date: today });
       return data;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['freelancer_fees'] })
@@ -104,6 +122,7 @@ export function useMarkFeeUnpaid() {
     mutationFn: async (id) => {
       const { data, error } = await supabase.from('freelancer_fees').update({ status: 'pending', paid_date: null }).eq('id', id).select().single();
       if (error) throw new Error(error.message);
+      await logAudit('fee.reopened', 'freelancer_fee', id);
       return data;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['freelancer_fees'] })

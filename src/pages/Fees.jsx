@@ -7,6 +7,7 @@ import {
   useCreateFreelancerFee, 
   useUpdateFreelancerFee, 
   useDeleteFreelancerFee, 
+  useApproveFee,
   useMarkFeePaid, 
   useMarkFeeUnpaid 
 } from '../lib/queries/freelancer_fees';
@@ -60,6 +61,7 @@ export default function Fees() {
   const createFee = useCreateFreelancerFee();
   const updateFee = useUpdateFreelancerFee();
   const deleteFee = useDeleteFreelancerFee();
+  const approveFee = useApproveFee();
   const markPaid = useMarkFeePaid();
   const markUnpaid = useMarkFeeUnpaid();
 
@@ -139,12 +141,12 @@ export default function Fees() {
       .filter(r => r.status === 'paid')
       .reduce((sum, r) => sum + (r.calculated_fee || 0), 0);
     const pendingAmt = filteredRows
-      .filter(r => r.status === 'pending')
+      .filter(r => r.status !== 'paid')
       .reduce((sum, r) => sum + (r.calculated_fee || 0), 0);
     
     const totalCount = filteredRows.length;
     const paidCount = filteredRows.filter(r => r.status === 'paid').length;
-    const pendingCount = filteredRows.filter(r => r.status === 'pending').length;
+    const pendingCount = filteredRows.filter(r => r.status !== 'paid').length;
     
     return { totalAmt, paidAmt, pendingAmt, totalCount, paidCount, pendingCount };
   }, [filteredRows]);
@@ -362,15 +364,25 @@ export default function Fees() {
     }},
     { key: 'fee', label: 'Fee', render: (row) => <span className="font-medium">Rp {formatCurrency(row.calculated_fee)}</span> },
     { key: 'status', label: 'Status', render: (row) => (
-      row.status === 'paid' ? <Badge variant="success">Paid</Badge> : <Badge variant="warning">Pending</Badge>
+      row.status === 'paid'
+        ? <Badge variant="success">Paid</Badge>
+        : row.status === 'approved'
+          ? <Badge variant="neutral">Approved</Badge>
+          : <Badge variant="warning">Pending</Badge>
     )},
     { key: 'actions', label: 'Actions', render: (row) => (
       <div className="flex gap-1" onClick={e => e.stopPropagation()}>
-        {row.status !== 'paid' ? (
+        {row.status === 'pending' && (
+          <Button variant="ghost" size="sm" className="text-gray-700 hover:text-gray-950 hover:bg-gray-100" title="Approve Fee" onClick={async (e) => { e.stopPropagation(); await approveFee.mutateAsync(row.id); showToast('Fee approved'); }}>
+            <Check size={14} />
+          </Button>
+        )}
+        {row.status === 'approved' && (
           <Button variant="ghost" size="sm" className="text-gray-700 hover:text-gray-950 hover:bg-gray-100" title="Mark Paid" onClick={async (e) => { e.stopPropagation(); await markPaid.mutateAsync(row.id); showToast('Marked as paid'); }}>
             <Check size={14} />
           </Button>
-        ) : (
+        )}
+        {row.status === 'paid' && (
           <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-600 hover:bg-gray-100" title="Mark Unpaid" onClick={async (e) => { e.stopPropagation(); await markUnpaid.mutateAsync(row.id); showToast('Reverted to pending'); }}>
             <Undo2 size={14} />
           </Button>
@@ -461,6 +473,7 @@ export default function Fees() {
           options={[
             { value: 'all', label: 'All statuses' },
             { value: 'pending', label: 'Pending' },
+            { value: 'approved', label: 'Approved' },
             { value: 'paid', label: 'Paid' }
           ]}
           className="w-full sm:w-40"
@@ -625,6 +638,7 @@ export default function Fees() {
               onChange={e => setFormData({...formData, status: e.target.value})}
               options={[
                 { value: 'pending', label: 'Pending' },
+                { value: 'approved', label: 'Approved' },
                 { value: 'paid', label: 'Paid' }
               ]}
             />

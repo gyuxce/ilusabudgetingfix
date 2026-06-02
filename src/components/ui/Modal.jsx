@@ -18,12 +18,12 @@ export function Modal({ open, onClose, title, children, footer, maxWidthClass = 
         className="absolute inset-0 bg-black/40 transition-opacity" 
         onClick={onClose} 
       />
-      <div className={`relative w-full ${maxWidthClass} bg-white rounded-lg border border-gray-200 shadow-xl m-4 flex flex-col max-h-[90vh]`}>
-        <div className="p-5 border-b border-gray-200 flex justify-between items-center shrink-0">
-          <h2 className="text-base font-semibold text-gray-900">{title}</h2>
+      <div className={`relative w-full ${maxWidthClass} bg-white rounded-lg border border-[#DDA15E]/35 shadow-xl shadow-[#283618]/15 m-4 flex flex-col max-h-[90vh]`}>
+        <div className="p-5 border-b border-[#DDA15E]/30 flex justify-between items-center shrink-0">
+          <h2 className="text-base font-semibold text-[#283618]">{title}</h2>
           <button 
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-[#606C38]/70 hover:text-[#283618] transition-colors"
           >
             <X size={20} />
           </button>
@@ -32,7 +32,7 @@ export function Modal({ open, onClose, title, children, footer, maxWidthClass = 
           {children}
         </div>
         {footer && (
-          <div className="p-4 border-t border-gray-200 bg-gray-50 rounded-b-lg flex gap-3 justify-end shrink-0">
+          <div className="p-4 border-t border-[#DDA15E]/30 bg-[#FEFAE0] rounded-b-lg flex gap-3 justify-end shrink-0">
             {footer}
           </div>
         )}

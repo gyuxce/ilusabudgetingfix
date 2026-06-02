@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../supabase';
+import { logAudit } from '../audit';
 
 export function useInvoicePayments(invoiceId) {
   return useQuery({
@@ -12,6 +13,7 @@ export function useInvoicePayments(invoiceId) {
         .eq('invoice_id', invoiceId)
         .order('payment_date', { ascending: false });
       if (error) throw error;
+      await logAudit('payment.recorded', 'invoice', data.invoice_id, { payment_id: data.id, amount: data.amount });
       return data;
     },
     enabled: !!invoiceId,
@@ -42,6 +44,7 @@ export function useDeletePayment() {
     mutationFn: async ({ id, invoice_id }) => {
       const { error } = await supabase.from('invoice_payments').delete().eq('id', id);
       if (error) throw error;
+      await logAudit('payment.deleted', 'invoice', invoice_id, { payment_id: id });
       return { id, invoice_id };
     },
     onSuccess: (data) => {
