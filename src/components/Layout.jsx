@@ -35,12 +35,12 @@ const mobileNavItems = navItems.filter((item) => ['/', '/invoices', '/fees', '/p
 function BrandMark() {
   return (
     <div className="flex items-center gap-3">
-      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#283618] text-sm font-bold tracking-tight text-[#FEFAE0] shadow-sm shadow-[#283618]/20">
+      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-950 text-sm font-bold tracking-tight text-white shadow-sm shadow-gray-950/15">
         IL
       </div>
       <div className="min-w-0">
-        <p className="truncate text-sm font-bold leading-none tracking-tight text-[#283618]">Ilusa</p>
-        <p className="mt-1 truncate text-xs text-[#606C38]">Budget Controlling</p>
+        <p className="truncate text-sm font-bold leading-none tracking-tight text-gray-950">Ilusa</p>
+        <p className="mt-1 truncate text-xs text-gray-500">Budget Controlling</p>
       </div>
     </div>
   );
@@ -57,8 +57,8 @@ function NavItem({ item, compact = false }) {
       className={({ isActive }) =>
         `group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all duration-200 ${
           isActive
-            ? 'bg-[#283618] text-[#FEFAE0] shadow-sm shadow-[#283618]/20'
-            : 'text-[#606C38] hover:bg-[#DDA15E]/15 hover:text-[#283618]'
+            ? 'bg-gray-950 text-white shadow-sm shadow-gray-950/15'
+            : 'text-gray-600 hover:bg-gray-100 hover:text-gray-950'
         } ${compact ? 'flex-col gap-1 px-2 py-2 text-[11px]' : ''}`
       }
     >
@@ -75,8 +75,8 @@ export default function Layout() {
   const CurrentIcon = currentItem.icon;
 
   return (
-    <div className="min-h-screen bg-[#FEFAE0] font-sans text-[#283618]">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-[#DDA15E]/35 bg-[#FEFAE0]/95 p-4 backdrop-blur lg:flex lg:flex-col">
+    <div className="min-h-screen bg-slate-50 font-sans text-gray-950">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-gray-200 bg-white/95 p-4 backdrop-blur lg:flex lg:flex-col">
         <BrandMark />
 
         <nav className="mt-8 flex-1 space-y-1">
@@ -85,13 +85,13 @@ export default function Layout() {
           ))}
         </nav>
 
-        <div className="rounded-xl border border-[#DDA15E]/35 bg-white/75 p-3 shadow-sm shadow-[#283618]/5">
-          <p className="truncate text-xs font-medium text-[#283618]" title={session?.user?.email}>
+        <div className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm shadow-gray-950/5">
+          <p className="truncate text-xs font-medium text-gray-900" title={session?.user?.email}>
             {session?.user?.email}
           </p>
           <button
             onClick={signOut}
-            className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-[#DDA15E]/40 px-3 py-2 text-xs font-medium text-[#606C38] transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+            className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-xs font-medium text-gray-600 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600"
           >
             <LogOut size={14} />
             Sign out
@@ -99,10 +99,10 @@ export default function Layout() {
         </div>
       </aside>
 
-      <div className="sticky top-0 z-20 border-b border-[#DDA15E]/35 bg-[#FEFAE0]/90 px-4 py-3 backdrop-blur lg:hidden">
+      <div className="sticky top-0 z-20 border-b border-gray-200 bg-white/90 px-4 py-3 backdrop-blur lg:hidden">
         <div className="flex items-center justify-between gap-3">
           <BrandMark />
-          <div className="flex items-center gap-2 rounded-full bg-[#DDA15E]/20 px-3 py-1.5 text-xs font-semibold text-[#283618]">
+          <div className="flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-700">
             <CurrentIcon size={14} />
             {currentItem.label}
           </div>
@@ -121,7 +121,7 @@ export default function Layout() {
         </motion.div>
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[#DDA15E]/35 bg-[#FEFAE0]/95 px-2 pb-2 pt-2 shadow-[0_-12px_30px_rgba(40,54,24,0.12)] backdrop-blur lg:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-gray-200 bg-white/95 px-2 pb-2 pt-2 shadow-[0_-12px_30px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
         <div className="mx-auto grid max-w-lg grid-cols-5 gap-1">
           {mobileNavItems.map((item) => (
             <NavItem key={item.to} item={item} compact />

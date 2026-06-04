@@ -5,14 +5,14 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background-color: #fefae0;
-  color: #283618;
+  background-color: #f8fafc;
+  color: #111827;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 ::selection {
-  background: #dda15e;
-  color: #283618;
+  background: #bfdbfe;
+  color: #111827;
 }

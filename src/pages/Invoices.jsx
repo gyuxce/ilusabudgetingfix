@@ -786,31 +786,31 @@ export default function Invoices() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <Card className="!p-4">
-          <p className="text-xs text-[#606C38] uppercase tracking-wider font-semibold mb-1">
+          <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">
             Total {(!filterBillingMonth || filterBillingMonth === 'all') ? '(All Time)' : `- Billing ${formatPeriod(filterBillingMonth)}`}
           </p>
-          <div className="text-2xl font-semibold tracking-tight text-[#283618] leading-tight">
+          <div className="text-2xl font-semibold tracking-tight text-gray-950 leading-tight">
             <AnimatedNumber value={cardTotals.total} prefix="Rp " />
           </div>
-          <p className="text-xs text-[#606C38] mt-1">{cardTotals.totalCount} invoices</p>
+          <p className="text-xs text-gray-500 mt-1">{cardTotals.totalCount} invoices</p>
         </Card>
         <Card className="!p-4">
-          <p className="text-xs text-[#606C38] uppercase tracking-wider font-semibold mb-1">
+          <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">
             Paid {(!filterBillingMonth || filterBillingMonth === 'all') ? '(All Time)' : `- Billing ${formatPeriod(filterBillingMonth)}`}
           </p>
-          <div className="text-2xl font-semibold tracking-tight text-[#606C38] leading-tight">
+          <div className="text-2xl font-semibold tracking-tight text-emerald-600 leading-tight">
             <AnimatedNumber value={cardTotals.paid} prefix="Rp " />
           </div>
-          <p className="text-xs text-[#606C38] mt-1">{cardTotals.paidCount} paid</p>
+          <p className="text-xs text-gray-500 mt-1">{cardTotals.paidCount} paid</p>
         </Card>
         <Card className="!p-4">
-          <p className="text-xs text-[#606C38] uppercase tracking-wider font-semibold mb-1">
+          <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">
             Outstanding {(!filterBillingMonth || filterBillingMonth === 'all') ? '(All Time)' : `- Billing ${formatPeriod(filterBillingMonth)}`}
           </p>
-          <div className={`text-2xl font-semibold tracking-tight leading-tight ${cardTotals.outstanding > 0 ? 'text-[#BC6C25]' : 'text-[#606C38]/50'}`}>
+          <div className={`text-2xl font-semibold tracking-tight leading-tight ${cardTotals.outstanding > 0 ? 'text-amber-600' : 'text-gray-400'}`}>
             <AnimatedNumber value={cardTotals.outstanding} prefix="Rp " />
           </div>
-          <p className="text-xs text-[#606C38] mt-1">{cardTotals.outstandingCount} unpaid</p>
+          <p className="text-xs text-gray-500 mt-1">{cardTotals.outstandingCount} unpaid</p>
         </Card>
       </div>
 
@@ -818,13 +818,13 @@ export default function Invoices() {
         <Card title="Invoice Download Queue" description="Unpaid invoices that are overdue or due within 7 days" className="mb-6">
           <div className="grid gap-3 lg:grid-cols-2">
             {unpaidDownloadQueue.map((invoice) => (
-              <div key={invoice.id} className="flex items-center justify-between gap-4 rounded-lg border border-[#DDA15E]/25 bg-[#FEFAE0] px-4 py-3">
+              <div key={invoice.id} className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-[#283618]">{invoice.engagement?.client?.company_name}</p>
-                  <p className="mt-0.5 text-xs text-[#606C38]">
+                  <p className="truncate text-sm font-semibold text-gray-950">{invoice.engagement?.client?.company_name}</p>
+                  <p className="mt-0.5 text-xs text-gray-500">
                     {invoice.engagement?.service?.name} · Service period {formatPeriod(invoice.period_month)}
                   </p>
-                  <p className={`mt-1 text-xs font-medium ${invoice.daysUntilDue < 0 ? 'text-red-600' : 'text-[#BC6C25]'}`}>
+                  <p className={`mt-1 text-xs font-medium ${invoice.daysUntilDue < 0 ? 'text-red-600' : 'text-amber-600'}`}>
                     {invoice.daysUntilDue < 0 ? `${Math.abs(invoice.daysUntilDue)} days overdue` : invoice.daysUntilDue === 0 ? 'Due today' : `Due in ${invoice.daysUntilDue} days`}
                   </p>
                 </div>
@@ -840,7 +840,7 @@ export default function Invoices() {
 
       <div className="flex flex-wrap gap-3 mb-4">
         <div className="max-w-xs w-full relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#606C38]/70" size={16} />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
           <Input 
             placeholder="Search invoice # or client..." 
             value={search}

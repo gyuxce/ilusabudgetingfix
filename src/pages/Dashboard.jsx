@@ -352,11 +352,11 @@ export default function Dashboard() {
 
   const invoiceStatusData = useMemo(() => {
     const statuses = [
-      { key: 'paid', label: 'Paid', color: '#283618' },
-      { key: 'sent', label: 'Sent', color: '#606C38' },
-      { key: 'partial', label: 'Partial', color: '#DDA15E' },
+      { key: 'paid', label: 'Paid', color: '#059669' },
+      { key: 'sent', label: 'Sent', color: '#2563eb' },
+      { key: 'partial', label: 'Partial', color: '#f59e0b' },
       { key: 'overdue', label: 'Overdue', color: '#dc2626' },
-      { key: 'draft', label: 'Draft', color: '#BC6C25' },
+      { key: 'draft', label: 'Draft', color: '#9ca3af' },
     ];
 
     return statuses
@@ -370,16 +370,16 @@ export default function Dashboard() {
   if (invoicesLoading || feesLoading || engLoading) {
     return (
       <div className="animate-pulse space-y-5">
-        <div className="h-24 rounded-xl bg-[#DDA15E]/25" />
+        <div className="h-24 rounded-xl bg-gray-200" />
         <div className="grid gap-4 md:grid-cols-4">
-          <div className="h-32 rounded-xl bg-[#DDA15E]/25" />
-          <div className="h-32 rounded-xl bg-[#DDA15E]/25" />
-          <div className="h-32 rounded-xl bg-[#DDA15E]/25" />
-          <div className="h-32 rounded-xl bg-[#DDA15E]/25" />
+          <div className="h-32 rounded-xl bg-gray-200" />
+          <div className="h-32 rounded-xl bg-gray-200" />
+          <div className="h-32 rounded-xl bg-gray-200" />
+          <div className="h-32 rounded-xl bg-gray-200" />
         </div>
         <div className="grid gap-4 lg:grid-cols-3">
-          <div className="h-80 rounded-xl bg-[#DDA15E]/25 lg:col-span-2" />
-          <div className="h-80 rounded-xl bg-[#DDA15E]/25" />
+          <div className="h-80 rounded-xl bg-gray-200 lg:col-span-2" />
+          <div className="h-80 rounded-xl bg-gray-200" />
         </div>
       </div>
     );
@@ -407,12 +407,12 @@ export default function Dashboard() {
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mb-6 flex items-start gap-3 rounded-xl border border-[#DDA15E]/45 bg-[#DDA15E]/20 p-4"
+        className="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4"
       >
-        <AlertCircle className="mt-0.5 shrink-0 text-[#BC6C25]" size={20} />
+        <AlertCircle className="mt-0.5 shrink-0 text-amber-600" size={20} />
         <div>
-          <h3 className="text-sm font-semibold text-[#283618]">Action Needed</h3>
-          <p className="mt-1 text-sm text-[#BC6C25]">
+          <h3 className="text-sm font-semibold text-amber-950">Action Needed</h3>
+          <p className="mt-1 text-sm text-amber-800">
             {metrics.allOverdueInvoices.length} overdue invoice{metrics.allOverdueInvoices.length === 1 ? '' : 's'} need follow-up. Collect Rp {formatCurrency(metrics.totalOverdueAmount)}.
           </p>
         </div>
@@ -452,26 +452,26 @@ export default function Dashboard() {
         }
       />
 
-      <section className="mb-6 overflow-hidden rounded-2xl border border-[#DDA15E]/35 bg-white/85 shadow-sm shadow-[#283618]/5">
+      <section className="mb-6 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm shadow-gray-950/5">
         <div className="grid gap-0 lg:grid-cols-[1.4fr_1fr]">
           <div className="p-6 sm:p-7">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#606C38]">Cash Position</p>
-            <h2 className="mt-3 text-3xl font-bold tracking-tight text-[#283618] sm:text-4xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-500">Cash Position</p>
+            <h2 className="mt-3 text-3xl font-bold tracking-tight text-gray-950 sm:text-4xl">
               <AnimatedNumber value={metrics.netCashflow.net} prefix={metrics.netCashflow.net < 0 ? '-Rp ' : 'Rp '} formatter={(v) => formatCurrency(Math.abs(v))} />
             </h2>
-            <p className="mt-3 max-w-2xl text-sm text-[#606C38]">
+            <p className="mt-3 max-w-2xl text-sm text-gray-500">
               All-time cash in minus paid freelancer fees. Charts below animate from live Supabase data.
             </p>
           </div>
-          <div className="grid grid-cols-2 border-t border-[#DDA15E]/25 bg-[#FEFAE0] lg:border-l lg:border-t-0">
+          <div className="grid grid-cols-2 border-t border-gray-100 bg-gray-50 lg:border-l lg:border-t-0">
             <div className="p-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#606C38]">Cash In</p>
-              <p className="mt-2 text-xl font-bold text-[#606C38]">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-gray-500">Cash In</p>
+              <p className="mt-2 text-xl font-bold text-emerald-600">
                 <AnimatedNumber value={metrics.netCashflow.cashIn} prefix="Rp " />
               </p>
             </div>
-            <div className="border-l border-[#DDA15E]/35 p-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#606C38]">Cash Out</p>
+            <div className="border-l border-gray-200 p-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-gray-500">Cash Out</p>
               <p className="mt-2 text-xl font-bold text-red-600">
                 <AnimatedNumber value={metrics.netCashflow.cashOut} prefix="Rp " />
               </p>
@@ -494,14 +494,14 @@ export default function Dashboard() {
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={monthlyData} margin={{ left: -18, right: 8, top: 10, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#DDA15E" strokeOpacity={0.35} vertical={false} />
-                <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fill: '#606C38', fontSize: 12 }} />
-                <YAxis tickFormatter={chartCurrency} tickLine={false} axisLine={false} tick={{ fill: '#606C38', fontSize: 12 }} />
-                <Tooltip formatter={(value) => `Rp ${formatCurrency(value)}`} contentStyle={{ borderRadius: 12, borderColor: '#DDA15E', color: '#283618' }} />
-                <Area type="monotone" dataKey="issued" name="Issued" stroke="#DDA15E" strokeWidth={2} fill="#FEFAE0" animationDuration={900} />
-                <Area type="monotone" dataKey="revenue" name="Received" stroke="#606C38" strokeWidth={3} fill="#606C38" fillOpacity={0.12} animationDuration={900} />
-                <Area type="monotone" dataKey="fees" name="Fees" stroke="#BC6C25" strokeWidth={2} fill="transparent" animationDuration={900} />
-                <Area type="monotone" dataKey="profit" name="Profit Cash" stroke="#283618" strokeWidth={2} fill="transparent" animationDuration={900} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+                <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} />
+                <YAxis tickFormatter={chartCurrency} tickLine={false} axisLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} />
+                <Tooltip formatter={(value) => `Rp ${formatCurrency(value)}`} contentStyle={{ borderRadius: 12, borderColor: '#e5e7eb', color: '#111827' }} />
+                <Area type="monotone" dataKey="issued" name="Issued" stroke="#93c5fd" strokeWidth={2} fill="#eff6ff" animationDuration={900} />
+                <Area type="monotone" dataKey="revenue" name="Received" stroke="#2563eb" strokeWidth={3} fill="#dbeafe" animationDuration={900} />
+                <Area type="monotone" dataKey="fees" name="Fees" stroke="#f59e0b" strokeWidth={2} fill="transparent" animationDuration={900} />
+                <Area type="monotone" dataKey="profit" name="Profit Cash" stroke="#059669" strokeWidth={2} fill="transparent" animationDuration={900} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -522,10 +522,10 @@ export default function Dashboard() {
           </div>
           <div className="grid grid-cols-2 gap-2 text-xs">
             {invoiceStatusData.map((item) => (
-              <div key={item.key} className="flex items-center gap-2 rounded-lg bg-[#FEFAE0] px-2 py-1.5">
+              <div key={item.key} className="flex items-center gap-2 rounded-lg bg-gray-50 px-2 py-1.5">
                 <span className="h-2 w-2 rounded-full" style={{ backgroundColor: item.color }} />
-                <span className="text-[#606C38]">{item.label}</span>
-                <span className="ml-auto font-semibold text-[#283618]">{item.value}</span>
+                <span className="text-gray-600">{item.label}</span>
+                <span className="ml-auto font-semibold text-gray-950">{item.value}</span>
               </div>
             ))}
           </div>
@@ -549,12 +549,12 @@ export default function Dashboard() {
           <div className="mt-6 h-44">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={monthlyData} margin={{ left: -18, right: 8, top: 8, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#DDA15E" strokeOpacity={0.35} vertical={false} />
-                <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fill: '#606C38', fontSize: 12 }} />
-                <YAxis tickFormatter={chartCurrency} tickLine={false} axisLine={false} tick={{ fill: '#606C38', fontSize: 12 }} />
-                <Tooltip formatter={(value) => `Rp ${formatCurrency(value)}`} contentStyle={{ borderRadius: 12, borderColor: '#DDA15E', color: '#283618' }} />
-                <Bar dataKey="issued" name="Issued" fill="#DDA15E" radius={[6, 6, 0, 0]} animationDuration={900} />
-                <Bar dataKey="fees" name="Fees" fill="#283618" radius={[6, 6, 0, 0]} animationDuration={900} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+                <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} />
+                <YAxis tickFormatter={chartCurrency} tickLine={false} axisLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} />
+                <Tooltip formatter={(value) => `Rp ${formatCurrency(value)}`} contentStyle={{ borderRadius: 12, borderColor: '#e5e7eb', color: '#111827' }} />
+                <Bar dataKey="issued" name="Issued" fill="#93c5fd" radius={[6, 6, 0, 0]} animationDuration={900} />
+                <Bar dataKey="fees" name="Fees" fill="#111827" radius={[6, 6, 0, 0]} animationDuration={900} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -563,12 +563,12 @@ export default function Dashboard() {
         <Card title="Active Engagements">
           <div className="flex items-end justify-between">
             <div>
-              <p className="text-5xl font-bold tracking-tight text-[#283618]">
+              <p className="text-5xl font-bold tracking-tight text-gray-950">
                 <AnimatedNumber value={metrics.activeEngagements.length} />
               </p>
-              <p className="mt-2 text-sm text-[#606C38]">{metrics.distinctClientsSet.size} active clients</p>
+              <p className="mt-2 text-sm text-gray-500">{metrics.distinctClientsSet.size} active clients</p>
             </div>
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#283618] text-[#FEFAE0]">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-950 text-white">
               <Briefcase size={22} />
             </div>
           </div>
@@ -603,7 +603,7 @@ export default function Dashboard() {
             {ownerInsights.clientProfitability.map((client) => (
               <ProfitabilityRow key={client.name} name={client.name} revenue={client.revenue} cost={client.cost} margin={client.margin} marginRate={client.marginRate} />
             ))}
-            {ownerInsights.clientProfitability.length === 0 && <p className="text-sm text-[#606C38]">No client profitability data yet.</p>}
+            {ownerInsights.clientProfitability.length === 0 && <p className="text-sm text-gray-500">No client profitability data yet.</p>}
           </div>
         </Card>
       </section>
@@ -614,7 +614,7 @@ export default function Dashboard() {
             {ownerInsights.projectHealth.map((project) => (
               <ProjectHealthRow key={project.id} project={project} />
             ))}
-            {ownerInsights.projectHealth.length === 0 && <p className="text-sm text-[#606C38]">No engagement data yet.</p>}
+            {ownerInsights.projectHealth.length === 0 && <p className="text-sm text-gray-500">No engagement data yet.</p>}
           </div>
         </Card>
       </section>
@@ -634,8 +634,8 @@ export default function Dashboard() {
           renderItem={(inv) => (
             <>
               <div>
-                <p className="text-sm font-semibold text-[#283618]">{inv.engagement?.client?.company_name}</p>
-                <p className="mt-0.5 text-xs text-[#606C38]">{inv.engagement?.service?.name} - {formatPeriod(inv.period_month)}</p>
+                <p className="text-sm font-semibold text-gray-950">{inv.engagement?.client?.company_name}</p>
+                <p className="mt-0.5 text-xs text-gray-500">{inv.engagement?.service?.name} - {formatPeriod(inv.period_month)}</p>
               </div>
               <div className="text-right">
                 <p className="text-sm font-semibold text-red-600">Rp {formatCurrency(inv.balance)}</p>
@@ -653,10 +653,10 @@ export default function Dashboard() {
           renderItem={(fee) => (
             <>
               <div>
-                <p className="text-sm font-semibold text-[#283618]">{fee.freelancer?.name}</p>
-                <p className="mt-0.5 text-xs text-[#606C38]">{fee.engagement?.client?.company_name} - {fee.engagement?.service?.name}</p>
+                <p className="text-sm font-semibold text-gray-950">{fee.freelancer?.name}</p>
+                <p className="mt-0.5 text-xs text-gray-500">{fee.engagement?.client?.company_name} - {fee.engagement?.service?.name}</p>
               </div>
-              <p className="text-sm font-semibold text-[#BC6C25]">Rp {formatCurrency(fee.calculated_fee)}</p>
+              <p className="text-sm font-semibold text-amber-600">Rp {formatCurrency(fee.calculated_fee)}</p>
             </>
           )}
         />
@@ -667,36 +667,36 @@ export default function Dashboard() {
 
 function MiniMetric({ label, value, count, tone = 'gray' }) {
   const toneClass = {
-    gray: 'text-[#283618]',
-    slate: 'text-[#606C38]',
-    amber: 'text-[#BC6C25]',
+    gray: 'text-gray-950',
+    slate: 'text-emerald-600',
+    amber: 'text-amber-600',
   }[tone];
 
   return (
-    <div className="rounded-xl bg-[#FEFAE0] p-4 ring-1 ring-[#DDA15E]/25">
-      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#606C38]">{label}</p>
+    <div className="rounded-xl bg-gray-50 p-4 ring-1 ring-gray-200">
+      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-gray-500">{label}</p>
       <p className={`mt-2 text-xl font-bold ${toneClass}`}>
         <AnimatedNumber value={value} prefix="Rp " />
       </p>
-      {count && <p className="mt-1 text-xs text-[#606C38]">{count}</p>}
+      {count && <p className="mt-1 text-xs text-gray-500">{count}</p>}
     </div>
   );
 }
 
 function HealthMetric({ title, value, detail, tone = 'gray', isPercent = false }) {
-  const valueClass = tone === 'red' ? 'text-red-600' : 'text-[#606C38]';
+  const valueClass = tone === 'red' ? 'text-red-600' : 'text-blue-700';
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-xl border border-[#DDA15E]/35 bg-white/85 p-5 shadow-sm shadow-[#283618]/5"
+      className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm shadow-gray-950/5"
     >
-      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#606C38]">{title}</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-gray-500">{title}</p>
       <p className={`mt-3 text-3xl font-bold tracking-tight ${valueClass}`}>
         <AnimatedNumber value={value} suffix={isPercent ? '%' : ''} />
       </p>
-      <p className="mt-1 text-sm text-[#606C38]">{detail}</p>
+      <p className="mt-1 text-sm text-gray-500">{detail}</p>
     </motion.div>
   );
 }
@@ -712,16 +712,16 @@ function SplitList({ leftTitle, rightTitle, leftItems, rightItems }) {
 
 function CompactAmountList({ title, items }) {
   return (
-    <div className="rounded-xl border border-[#DDA15E]/25 bg-[#FEFAE0] p-4">
-      <p className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-[#606C38]">{title}</p>
+    <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+      <p className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-gray-500">{title}</p>
       {items.length === 0 ? (
-        <p className="text-sm text-[#606C38]">No unpaid items.</p>
+        <p className="text-sm text-gray-500">No unpaid items.</p>
       ) : (
         <div className="space-y-3">
           {items.map((item) => (
             <div key={item.name} className="flex items-start justify-between gap-3 text-sm">
-              <span className="min-w-0 truncate text-[#283618]">{item.name}</span>
-              <span className="shrink-0 font-semibold text-[#BC6C25]">Rp {formatCurrency(item.amount)}</span>
+              <span className="min-w-0 truncate text-gray-700">{item.name}</span>
+              <span className="shrink-0 font-semibold text-amber-600">Rp {formatCurrency(item.amount)}</span>
             </div>
           ))}
         </div>
@@ -734,19 +734,19 @@ function ProfitabilityRow({ name, revenue, cost, margin, marginRate }) {
   const positive = margin >= 0;
 
   return (
-    <div className="rounded-xl border border-[#DDA15E]/25 bg-[#FEFAE0] p-4">
+    <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-[#283618]">{name}</p>
-          <p className="mt-1 text-xs text-[#606C38]">Revenue Rp {formatCurrency(revenue)} / Cost Rp {formatCurrency(cost)}</p>
+          <p className="truncate text-sm font-semibold text-gray-950">{name}</p>
+          <p className="mt-1 text-xs text-gray-500">Revenue Rp {formatCurrency(revenue)} / Cost Rp {formatCurrency(cost)}</p>
         </div>
         <div className="text-right">
-          <p className={`text-sm font-bold ${positive ? 'text-[#606C38]' : 'text-red-600'}`}>Rp {formatCurrency(margin)}</p>
-          <p className="mt-1 text-xs text-[#606C38]">{percent(marginRate)} margin</p>
+          <p className={`text-sm font-bold ${positive ? 'text-emerald-600' : 'text-red-600'}`}>Rp {formatCurrency(margin)}</p>
+          <p className="mt-1 text-xs text-gray-500">{percent(marginRate)} margin</p>
         </div>
       </div>
-      <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#DDA15E]/25">
-        <div className="h-full rounded-full bg-[#606C38]" style={{ width: `${Math.max(0, Math.min(100, marginRate))}%` }} />
+      <div className="mt-3 h-2 overflow-hidden rounded-full bg-gray-200">
+        <div className="h-full rounded-full bg-emerald-500" style={{ width: `${Math.max(0, Math.min(100, marginRate))}%` }} />
       </div>
     </div>
   );
@@ -754,16 +754,16 @@ function ProfitabilityRow({ name, revenue, cost, margin, marginRate }) {
 
 function ProjectHealthRow({ project }) {
   return (
-    <div className="grid gap-3 rounded-xl border border-[#DDA15E]/25 bg-[#FEFAE0] p-4 text-sm sm:grid-cols-[1fr_auto_auto_auto] sm:items-center">
+    <div className="grid gap-3 rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm sm:grid-cols-[1fr_auto_auto_auto] sm:items-center">
       <div className="min-w-0">
-        <p className="truncate font-semibold text-[#283618]">{project.name}</p>
-        <p className="mt-1 text-xs text-[#606C38]">Last activity: {project.lastActivity}</p>
+        <p className="truncate font-semibold text-gray-950">{project.name}</p>
+        <p className="mt-1 text-xs text-gray-500">Last activity: {project.lastActivity}</p>
       </div>
       <StatusPill label={project.invoiceStatus} />
       <StatusPill label={project.feeStatus} />
       <div className="sm:text-right">
-        <p className={`font-bold ${project.profitEstimate >= 0 ? 'text-[#606C38]' : 'text-red-600'}`}>Rp {formatCurrency(project.profitEstimate)}</p>
-        <p className="text-xs text-[#606C38]">{percent(project.marginEstimate)} est. margin</p>
+        <p className={`font-bold ${project.profitEstimate >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>Rp {formatCurrency(project.profitEstimate)}</p>
+        <p className="text-xs text-gray-500">{percent(project.marginEstimate)} est. margin</p>
       </div>
     </div>
   );
@@ -772,7 +772,7 @@ function ProjectHealthRow({ project }) {
 function StatusPill({ label }) {
   const isRisk = ['Overdue', 'Pending'].includes(label);
   return (
-    <span className={`inline-flex w-fit rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${isRisk ? 'bg-[#DDA15E]/20 text-[#BC6C25] ring-[#DDA15E]/35' : 'bg-white text-[#283618] ring-[#DDA15E]/35'}`}>
+    <span className={`inline-flex w-fit rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${isRisk ? 'bg-amber-50 text-amber-700 ring-amber-100' : 'bg-white text-gray-700 ring-gray-200'}`}>
       {label}
     </span>
   );
@@ -783,14 +783,14 @@ function ReportCard({ title, description, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className="rounded-xl border border-[#DDA15E]/35 bg-white/85 p-5 text-left shadow-sm shadow-[#283618]/5 transition-all hover:-translate-y-0.5 hover:shadow-md hover:shadow-[#283618]/10"
+      className="rounded-xl border border-gray-200 bg-white p-5 text-left shadow-sm shadow-gray-950/5 transition-all hover:-translate-y-0.5 hover:shadow-md hover:shadow-gray-950/10"
     >
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="font-semibold text-[#283618]">{title}</p>
-          <p className="mt-1 text-sm text-[#606C38]">{description}</p>
+          <p className="font-semibold text-gray-950">{title}</p>
+          <p className="mt-1 text-sm text-gray-500">{description}</p>
         </div>
-        <Download size={18} className="text-[#606C38]" />
+        <Download size={18} className="text-gray-500" />
       </div>
     </button>
   );
@@ -798,22 +798,22 @@ function ReportCard({ title, description, onClick }) {
 
 function WatchListCard({ title, link, empty, items, renderItem }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-[#DDA15E]/35 bg-white/85 shadow-sm shadow-[#283618]/5">
-      <div className="flex items-center justify-between border-b border-[#DDA15E]/25 p-5">
-        <h3 className="text-base font-semibold tracking-tight text-[#283618]">{title}</h3>
-        <Link to={link} className="text-xs font-semibold text-[#283618] hover:text-[#606C38]">View All</Link>
+    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm shadow-gray-950/5">
+      <div className="flex items-center justify-between border-b border-gray-100 p-5">
+        <h3 className="text-base font-semibold tracking-tight text-gray-950">{title}</h3>
+        <Link to={link} className="text-xs font-semibold text-gray-900 hover:text-gray-700">View All</Link>
       </div>
       {items.length === 0 ? (
-        <div className="p-8 text-center text-sm text-[#606C38]">{empty}</div>
+        <div className="p-8 text-center text-sm text-gray-500">{empty}</div>
       ) : (
-        <div className="divide-y divide-[#DDA15E]/20">
+        <div className="divide-y divide-gray-100">
           {items.map((item, idx) => (
             <motion.div
               key={item.id}
               initial={{ opacity: 0, x: -8 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.3, delay: idx * 0.04 }}
-              className="flex items-center justify-between gap-4 px-5 py-4 transition-colors hover:bg-[#DDA15E]/10"
+              className="flex items-center justify-between gap-4 px-5 py-4 transition-colors hover:bg-gray-50"
             >
               {renderItem(item)}
             </motion.div>
