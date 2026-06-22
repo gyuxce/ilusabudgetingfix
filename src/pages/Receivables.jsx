@@ -338,7 +338,11 @@ export default function Receivables() {
             <Select
               label="Status"
               value={formData.status}
-              onChange={(event) => setFormData({ ...formData, status: event.target.value })}
+              onChange={(event) => setFormData({
+                ...formData,
+                status: event.target.value,
+                reimbursed_date: event.target.value === 'reimbursed' ? formData.reimbursed_date : '',
+              })}
               options={[
                 { value: 'open', label: 'Open' },
                 { value: 'reimbursed', label: 'Reimbursed' },
@@ -348,9 +352,12 @@ export default function Receivables() {
             <Input
               label="Reimbursed Date"
               type="date"
-              disabled={formData.status !== 'reimbursed'}
               value={formData.reimbursed_date}
-              onChange={(event) => setFormData({ ...formData, reimbursed_date: event.target.value })}
+              onChange={(event) => setFormData({
+                ...formData,
+                reimbursed_date: event.target.value,
+                status: event.target.value ? 'reimbursed' : formData.status,
+              })}
             />
           </div>
 
