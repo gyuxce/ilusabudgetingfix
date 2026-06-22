@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { FileText, Plus, Calendar, Pencil, Trash2, CreditCard, Search, Download, Check } from 'lucide-react';
-import { differenceInDays, format, subMonths } from 'date-fns';
+import { addMonths, differenceInDays, format, subMonths } from 'date-fns';
 import { useSearchParams } from 'react-router-dom';
 import { useInvoices, useCreateInvoice, useCreateInvoicesBulk, useUpdateInvoice, useDeleteInvoice, useSetInvoiceStatus } from '../lib/queries/invoices';
 import { useEngagements } from '../lib/queries/engagements';
@@ -31,6 +31,12 @@ const getBillingDate = (periodKey, day = 1) => {
   const [year, month] = periodKey.split('-').map(Number);
   const lastDay = new Date(year, month, 0).getDate();
   return `${periodKey}-${String(Math.min(Math.max(day, 1), lastDay)).padStart(2, '0')}`;
+};
+
+const addMonthsToPeriodKey = (periodKey, amount) => {
+  const [year, month] = periodKey.split('-').map(Number);
+  const next = addMonths(new Date(year, month - 1, 1), amount);
+  return `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}`;
 };
 
 const generateInvoiceNumber = (issueDate, sequence = 1) => {
@@ -336,7 +342,7 @@ export default function Invoices() {
     e.preventDefault();
     setBulkFormError('');
 
-    if (!bulkFormData.engagement_id || !bulkFormData.start_period || !bulkFormData.end_period) {
+    if (!bulkFormData.engagement_id || !bulkFormData.billing_month || !bulkFormData.start_period || !bulkFormData.end_period) {
       setBulkFormError('Please fill out all required fields.');
       return;
     }
@@ -347,21 +353,22 @@ export default function Invoices() {
     }
 
     try {
-      const invoicesArray = bulkMonths.map(period => {
-        const issue_date = getBillingDate(bulkFormData.billing_month, 1);
-        const due_date = getBillingDate(bulkFormData.billing_month, parseInt(bulkFormData.due_day, 10) || 15);
+      const invoicesArray = bulkMonths.map((period, index) => {
+        const billingMonth = addMonthsToPeriodKey(bulkFormData.billing_month, index);
+        const issue_date = getBillingDate(billingMonth, 1);
+        const due_date = getBillingDate(billingMonth, parseInt(bulkFormData.due_day, 10) || 15);
         
         return {
           engagement_id: bulkFormData.engagement_id,
-          billing_month: bulkFormData.billing_month,
+          billing_month: billingMonth,
           period_month: period,
           amount: parseInt(bulkFormData.amount, 10) || 0,
           issue_date,
           due_date,
           status: bulkFormData.status || 'draft',
-          invoice_number: generateInvoiceNumber(issue_date, (invoices?.length || 0) + bulkMonths.indexOf(period) + 1),
+          invoice_number: generateInvoiceNumber(issue_date, (invoices?.length || 0) + index + 1),
           paid_date: null,
-          notes: `Invoice for service period ${formatPeriod(period)}. Billing month ${formatPeriod(bulkFormData.billing_month)}.`
+          notes: `Invoice for service period ${formatPeriod(period)}. Billing month ${formatPeriod(billingMonth)}.`
         };
       });
 
@@ -1168,11 +1175,12 @@ export default function Invoices() {
             <div className="mt-6 border-t border-gray-200 pt-4">
               <h4 className="text-sm font-medium text-gray-900 mb-2">Will generate {bulkMonths.length} invoices:</h4>
               <ul className="text-sm text-gray-600 space-y-1 max-h-32 overflow-y-auto bg-gray-50 p-2 rounded border border-gray-100">
-                {bulkMonths.map((m) => {
-                  const dueDate = getBillingDate(bulkFormData.billing_month, parseInt(bulkFormData.due_day, 10) || 15);
+                {bulkMonths.map((m, index) => {
+                  const billingMonth = addMonthsToPeriodKey(bulkFormData.billing_month, index);
+                  const dueDate = getBillingDate(billingMonth, parseInt(bulkFormData.due_day, 10) || 15);
                   return (
                     <li key={m}>
-                      Service {formatPeriod(m)} - Rp {formatCurrency(parseInt(bulkFormData.amount, 10) || 0)} - billing {formatPeriod(bulkFormData.billing_month)} - due {format(new Date(dueDate), 'MMM dd, yyyy')}
+                      Service {formatPeriod(m)} - Rp {formatCurrency(parseInt(bulkFormData.amount, 10) || 0)} - billing {formatPeriod(billingMonth)} - due {format(new Date(dueDate), 'MMM dd, yyyy')}
                     </li>
                   );
                 })}
