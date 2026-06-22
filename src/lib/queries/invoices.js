@@ -20,7 +20,6 @@ export function useInvoices() {
         .order('due_date', { ascending: false });
 
       if (error) throw new Error(error.message);
-      await logAudit('invoice.created', 'invoice', data.id, { amount: data.amount, status: data.status });
       return data;
     }
   });
@@ -37,11 +36,6 @@ export function useInvoice(id) {
         .eq('id', id)
         .single();
       if (error) throw new Error(error.message);
-      await Promise.all((data || []).map((invoice) => logAudit('invoice.created_bulk', 'invoice', invoice.id, {
-        amount: invoice.amount,
-        billing_month: invoice.billing_month,
-        service_period: invoice.period_month,
-      })));
       return data;
     },
     enabled: !!id
@@ -58,7 +52,12 @@ export function useCreateInvoice() {
         .select()
         .single();
       if (error) throw new Error(error.message);
-      await logAudit('invoice.updated', 'invoice', data.id, updateData);
+      await logAudit('invoice.created', 'invoice', data.id, {
+        amount: data.amount,
+        billing_month: data.billing_month,
+        service_period: data.period_month,
+        status: data.status,
+      });
       return data;
     },
     onSuccess: () => {
@@ -76,6 +75,12 @@ export function useCreateInvoicesBulk() {
         .insert(invoicesArray)
         .select();
       if (error) throw new Error(error.message);
+      await Promise.all((data || []).map((invoice) => logAudit('invoice.created_bulk', 'invoice', invoice.id, {
+        amount: invoice.amount,
+        billing_month: invoice.billing_month,
+        service_period: invoice.period_month,
+        status: invoice.status,
+      })));
       return data;
     },
     onSuccess: () => {
@@ -95,6 +100,7 @@ export function useUpdateInvoice() {
         .select()
         .single();
       if (error) throw new Error(error.message);
+      await logAudit('invoice.updated', 'invoice', data.id, updateData);
       return data;
     },
     onSuccess: (data) => {
