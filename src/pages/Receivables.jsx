@@ -30,9 +30,9 @@ const statusLabels = {
 const categoryOptions = [
   { value: 'ads', label: 'Ads' },
   { value: 'tools', label: 'Tools' },
-  { value: 'production', label: 'Production' },
-  { value: 'operational', label: 'Operational' },
-  { value: 'other', label: 'Other' },
+  { value: 'production', label: 'Produksi' },
+  { value: 'operational', label: 'Operasional' },
+  { value: 'other', label: 'Lainnya' },
 ];
 
 export default function Receivables() {
@@ -120,17 +120,17 @@ export default function Receivables() {
 
     const amount = parseInt(formData.amount, 10);
     if (!formData.client_id || !formData.title.trim() || !formData.spend_date || !formData.period_month) {
-      setFormError('Client, title, spend date, and period are required.');
+      setFormError('Client, kebutuhan, tanggal bayar, dan bulan wajib diisi.');
       return;
     }
 
     if (Number.isNaN(amount) || amount <= 0) {
-      setFormError('Amount must be greater than zero.');
+      setFormError('Nominal harus lebih dari nol.');
       return;
     }
 
     if (formData.status === 'reimbursed' && !formData.reimbursed_date) {
-      setFormError('Reimbursed date is required when status is Reimbursed.');
+      setFormError('Tanggal client ganti wajib diisi kalau status sudah diganti.');
       return;
     }
 
@@ -170,11 +170,11 @@ export default function Receivables() {
 
   const columns = [
     { key: 'client', label: 'Client', render: (row) => <span className="font-medium">{row.client?.company_name || '-'}</span> },
-    { key: 'title', label: 'Item', render: (row) => row.title },
-    { key: 'category', label: 'Type', render: (row) => categoryOptions.find((item) => item.value === row.category)?.label || 'Other' },
-    { key: 'period_month', label: 'Period', render: (row) => formatPeriod(row.period_month) },
-    { key: 'spend_date', label: 'Paid Date', render: (row) => row.spend_date || '-' },
-    { key: 'amount', label: 'Amount', render: (row) => <span className="font-semibold">Rp {formatCurrency(row.amount)}</span> },
+    { key: 'title', label: 'Kebutuhan', render: (row) => row.title },
+    { key: 'category', label: 'Kategori', render: (row) => categoryOptions.find((item) => item.value === row.category)?.label || 'Lainnya' },
+    { key: 'period_month', label: 'Bulan', render: (row) => formatPeriod(row.period_month) },
+    { key: 'spend_date', label: 'Tanggal Bayar', render: (row) => row.spend_date || '-' },
+    { key: 'amount', label: 'Nominal', render: (row) => <span className="font-semibold">Rp {formatCurrency(row.amount)}</span> },
     {
       key: 'status',
       label: 'Status',
@@ -186,7 +186,7 @@ export default function Receivables() {
     },
     {
       key: 'actions',
-      label: 'Actions',
+      label: 'Aksi',
       render: (row) => (
         <div className="flex gap-1" onClick={(event) => event.stopPropagation()}>
           <Button variant="ghost" size="sm" onClick={(event) => openEditModal(row, event)}>
@@ -201,7 +201,7 @@ export default function Receivables() {
   ];
 
   if (clientsLoading || advancesLoading) {
-    return <div className="p-12 text-center text-sm text-gray-500">Loading piutang...</div>;
+    return <div className="p-12 text-center text-sm text-gray-500">Memuat piutang...</div>;
   }
 
   return (
@@ -212,7 +212,7 @@ export default function Receivables() {
         action={
           <Button onClick={openAddModal}>
             <Plus size={16} className="mr-1.5" />
-            New Piutang
+            Tambah Piutang
           </Button>
         }
       />
@@ -234,7 +234,7 @@ export default function Receivables() {
           value={periodFilter}
           onChange={(event) => setPeriodFilter(event.target.value)}
           options={[
-            { value: 'all', label: 'All months' },
+            { value: 'all', label: 'Semua bulan' },
             ...lastNMonths(18).map((month) => ({ value: month.value, label: month.label })),
           ]}
         />
@@ -245,7 +245,7 @@ export default function Receivables() {
             { value: 'open', label: 'Belum diganti' },
             { value: 'reimbursed', label: 'Sudah diganti' },
             { value: 'written_off', label: 'Tidak ditagih' },
-            { value: 'all', label: 'All statuses' },
+            { value: 'all', label: 'Semua status' },
           ]}
         />
       </div>
@@ -253,23 +253,23 @@ export default function Receivables() {
       {filteredRows.length === 0 ? (
         <EmptyState
           icon={WalletCards}
-          title="No piutang yet"
+          title="Belum ada piutang"
           description="Tambahkan talangan client seperti ads, tools, atau biaya operasional yang dibayarkan dulu oleh PT."
-          action={<Button onClick={openAddModal}>New Piutang</Button>}
+          action={<Button onClick={openAddModal}>Tambah Piutang</Button>}
         />
       ) : (
-        <DataTable columns={columns} rows={filteredRows} onRowClick={openEditModal} emptyMessage="No piutang match your filters" />
+        <DataTable columns={columns} rows={filteredRows} onRowClick={openEditModal} emptyMessage="Tidak ada piutang yang cocok dengan filter" />
       )}
 
       <Modal
         open={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={editingAdvance ? 'Edit Piutang' : 'New Piutang'}
+        title={editingAdvance ? 'Edit Piutang' : 'Tambah Piutang'}
         footer={
           <>
-            <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>Cancel</Button>
+            <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>Batal</Button>
             <Button type="button" onClick={handleSubmit} disabled={createAdvance.isPending || updateAdvance.isPending}>
-              {editingAdvance ? 'Update' : 'Save'}
+              {editingAdvance ? 'Update' : 'Simpan'}
             </Button>
           </>
         }
@@ -293,7 +293,7 @@ export default function Receivables() {
           />
 
           <Input
-            label="Description *"
+            label="Kebutuhan *"
             required
             placeholder="Meta Ads, Google Ads, domain, tools..."
             value={formData.title}
@@ -302,13 +302,13 @@ export default function Receivables() {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Select
-              label="Type"
+              label="Kategori"
               value={formData.category}
               onChange={(event) => setFormData({ ...formData, category: event.target.value })}
               options={categoryOptions}
             />
             <Input
-              label="Amount *"
+              label="Nominal *"
               type="number"
               min="1"
               required
@@ -363,7 +363,7 @@ export default function Receivables() {
           <Textarea
             label="Notes"
             rows={3}
-            placeholder="Optional internal note"
+            placeholder="Catatan internal opsional"
             value={formData.notes}
             onChange={(event) => setFormData({ ...formData, notes: event.target.value })}
           />
@@ -373,15 +373,15 @@ export default function Receivables() {
       <Modal
         open={!!deleteId}
         onClose={() => setDeleteId(null)}
-        title="Delete Piutang"
+        title="Hapus Piutang"
         footer={
           <>
-            <Button variant="secondary" onClick={() => setDeleteId(null)}>Cancel</Button>
-            <Button variant="danger" onClick={confirmDelete} disabled={deleteAdvance.isPending}>Delete</Button>
+            <Button variant="secondary" onClick={() => setDeleteId(null)}>Batal</Button>
+            <Button variant="danger" onClick={confirmDelete} disabled={deleteAdvance.isPending}>Hapus</Button>
           </>
         }
       >
-        <p className="text-sm text-gray-600">Delete this piutang entry? This cannot be undone.</p>
+        <p className="text-sm text-gray-600">Hapus data piutang ini? Data tidak bisa dikembalikan.</p>
       </Modal>
     </>
   );

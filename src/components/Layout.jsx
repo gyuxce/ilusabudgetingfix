@@ -16,12 +16,12 @@ import { useAuth } from '../lib/AuthContext';
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/clients', label: 'Clients', icon: Building2 },
+  { to: '/clients', label: 'Client', icon: Building2 },
   { to: '/freelancers', label: 'Freelancers', icon: Users },
   { to: '/services', label: 'Services', icon: Package },
-  { to: '/engagements', label: 'Engagements', icon: Briefcase },
-  { to: '/invoices', label: 'Invoices', icon: FileText },
-  { to: '/fees', label: 'Fees', icon: Wallet },
+  { to: '/engagements', label: 'Project', icon: Briefcase },
+  { to: '/invoices', label: 'Invoice', icon: FileText },
+  { to: '/fees', label: 'Bayar Freelancer', icon: Wallet },
   { to: '/receivables', label: 'Piutang', icon: WalletCards },
   { to: '/payroll-analytics', label: 'Payroll', icon: ChartNoAxesCombined },
 ];
