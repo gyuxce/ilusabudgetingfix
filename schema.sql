@@ -449,6 +449,9 @@ CREATE POLICY invoice_payments_authenticated_all ON invoice_payments FOR ALL TO 
 
 DROP POLICY IF EXISTS client_advances_authenticated_all ON client_advances;
 CREATE POLICY client_advances_authenticated_all ON client_advances FOR ALL TO authenticated USING (true) WITH CHECK (true);
+GRANT ALL ON TABLE public.client_advances TO authenticated;
+GRANT ALL ON TABLE public.client_advances TO service_role;
+NOTIFY pgrst, 'reload schema';
 
 DROP POLICY IF EXISTS freelancer_fees_authenticated_all ON freelancer_fees;
 CREATE POLICY freelancer_fees_authenticated_all ON freelancer_fees FOR ALL TO authenticated USING (true) WITH CHECK (true);

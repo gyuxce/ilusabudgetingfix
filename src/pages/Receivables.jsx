@@ -22,9 +22,9 @@ import { EmptyState } from '../components/ui/EmptyState';
 const formatCurrency = (value) => new Intl.NumberFormat('id-ID').format(value || 0);
 const todayKey = () => new Date().toISOString().slice(0, 10);
 const statusLabels = {
-  open: 'Open',
-  reimbursed: 'Reimbursed',
-  written_off: 'Written off',
+  open: 'Belum diganti',
+  reimbursed: 'Sudah diganti',
+  written_off: 'Tidak ditagih',
 };
 
 const categoryOptions = [
@@ -208,7 +208,7 @@ export default function Receivables() {
     <>
       <PageHeader
         title="Piutang"
-        description="Manual notes for money paid first by PT on behalf of clients."
+        description="Catatan manual untuk uang client yang dibayarkan dulu oleh PT."
         action={
           <Button onClick={openAddModal}>
             <Plus size={16} className="mr-1.5" />
@@ -219,14 +219,14 @@ export default function Receivables() {
 
       {advancesError && (
         <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-          Table client_advances is not ready yet. Run the latest schema.sql in Supabase SQL Editor, then refresh this page.
+          Database Piutang belum kebaca oleh Supabase API. Jalankan ulang file migrations/2026-06-22-client-advances.sql di Supabase SQL Editor, lalu refresh halaman ini.
         </div>
       )}
 
       <div className="mb-6 grid gap-4 md:grid-cols-3">
-        <StatCard label="Open Talangan" value={totals.open} count="Reduces cash position" icon={WalletCards} tone="red" />
-        <StatCard label="Reimbursed" value={totals.reimbursed} count="Cash recovered from clients" icon={Banknote} tone="blue" delay={0.03} />
-        <StatCard label="Written Off" value={totals.writtenOff} count="Not expected to be collected" icon={WalletCards} tone="gray" delay={0.06} />
+        <StatCard label="Belum Diganti" value={totals.open} count="Mengurangi cash position" icon={WalletCards} tone="red" />
+        <StatCard label="Sudah Diganti" value={totals.reimbursed} count="Uang sudah balik dari client" icon={Banknote} tone="blue" delay={0.03} />
+        <StatCard label="Tidak Ditagih" value={totals.writtenOff} count="Tetap tercatat sebagai cash out" icon={WalletCards} tone="gray" delay={0.06} />
       </div>
 
       <div className="mb-4 grid gap-3 md:grid-cols-[220px_220px]">
@@ -242,9 +242,9 @@ export default function Receivables() {
           value={statusFilter}
           onChange={(event) => setStatusFilter(event.target.value)}
           options={[
-            { value: 'open', label: 'Open' },
-            { value: 'reimbursed', label: 'Reimbursed' },
-            { value: 'written_off', label: 'Written off' },
+            { value: 'open', label: 'Belum diganti' },
+            { value: 'reimbursed', label: 'Sudah diganti' },
+            { value: 'written_off', label: 'Tidak ditagih' },
             { value: 'all', label: 'All statuses' },
           ]}
         />
@@ -254,7 +254,7 @@ export default function Receivables() {
         <EmptyState
           icon={WalletCards}
           title="No piutang yet"
-          description="Add manual client talangan like ads spend, tools, or operational costs paid first by PT."
+          description="Tambahkan talangan client seperti ads, tools, atau biaya operasional yang dibayarkan dulu oleh PT."
           action={<Button onClick={openAddModal}>New Piutang</Button>}
         />
       ) : (
@@ -319,7 +319,7 @@ export default function Receivables() {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Input
-              label="Paid Date *"
+              label="Tanggal PT Bayar *"
               type="date"
               required
               value={formData.spend_date}
@@ -344,21 +344,20 @@ export default function Receivables() {
                 reimbursed_date: event.target.value === 'reimbursed' ? formData.reimbursed_date : '',
               })}
               options={[
-                { value: 'open', label: 'Open' },
-                { value: 'reimbursed', label: 'Reimbursed' },
-                { value: 'written_off', label: 'Written off' },
+                { value: 'open', label: 'Belum diganti client' },
+                { value: 'reimbursed', label: 'Sudah diganti client' },
+                { value: 'written_off', label: 'Tidak ditagih' },
               ]}
             />
-            <Input
-              label="Reimbursed Date"
-              type="date"
-              value={formData.reimbursed_date}
-              onChange={(event) => setFormData({
-                ...formData,
-                reimbursed_date: event.target.value,
-                status: event.target.value ? 'reimbursed' : formData.status,
-              })}
-            />
+            {formData.status === 'reimbursed' && (
+              <Input
+                label="Tanggal Client Ganti *"
+                type="date"
+                required
+                value={formData.reimbursed_date}
+                onChange={(event) => setFormData({ ...formData, reimbursed_date: event.target.value })}
+              />
+            )}
           </div>
 
           <Textarea
