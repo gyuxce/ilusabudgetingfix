@@ -16,7 +16,6 @@ export function useFreelancerFees() {
         .order('period_month', { ascending: false });
 
       if (error) throw new Error(error.message);
-      await logAudit('fee.created', 'freelancer_fee', data.id, { amount: data.calculated_fee, status: data.status });
       return data;
     }
   });
@@ -33,7 +32,6 @@ export function useFreelancerFee(id) {
         .eq('id', id)
         .single();
       if (error) throw new Error(error.message);
-      await logAudit('fee.updated', 'freelancer_fee', data.id, updateData);
       return data;
     },
     enabled: !!id
@@ -50,6 +48,11 @@ export function useCreateFreelancerFee() {
         .select()
         .single();
       if (error) throw new Error(error.message);
+      await logAudit('fee.created', 'freelancer_fee', data.id, {
+        amount: data.calculated_fee,
+        period_month: data.period_month,
+        status: data.status,
+      });
       return data;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['freelancer_fees'] })
@@ -67,6 +70,7 @@ export function useUpdateFreelancerFee() {
         .select()
         .single();
       if (error) throw new Error(error.message);
+      await logAudit('fee.updated', 'freelancer_fee', data.id, updateData);
       return data;
     },
     onSuccess: (data) => {

@@ -8,10 +8,8 @@ import {
   Briefcase,
   FileText,
   ChartNoAxesCombined,
-  Activity,
-  CheckSquare,
-  Settings,
   Wallet,
+  WalletCards,
   LogOut,
 } from 'lucide-react';
 import { useAuth } from '../lib/AuthContext';
@@ -24,13 +22,11 @@ const navItems = [
   { to: '/engagements', label: 'Engagements', icon: Briefcase },
   { to: '/invoices', label: 'Invoices', icon: FileText },
   { to: '/fees', label: 'Fees', icon: Wallet },
+  { to: '/receivables', label: 'Piutang', icon: WalletCards },
   { to: '/payroll-analytics', label: 'Payroll', icon: ChartNoAxesCombined },
-  { to: '/monthly-close', label: 'Close', icon: CheckSquare },
-  { to: '/activity-log', label: 'Activity', icon: Activity },
-  { to: '/settings', label: 'Settings', icon: Settings },
 ];
 
-const mobileNavItems = navItems.filter((item) => ['/', '/invoices', '/fees', '/payroll-analytics', '/monthly-close'].includes(item.to));
+const mobileNavItems = navItems.filter((item) => ['/', '/invoices', '/fees', '/receivables', '/payroll-analytics'].includes(item.to));
 
 function BrandMark() {
   return (
