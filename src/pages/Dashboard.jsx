@@ -30,6 +30,7 @@ import {
 import { useInvoices } from '../lib/queries/invoices';
 import { useFreelancerFees } from '../lib/queries/freelancer_fees';
 import { useEngagements } from '../lib/queries/engagements';
+import { useClientAdvances } from '../lib/queries/client_advances';
 import { currentMonthKey, formatPeriod, lastNMonths } from '../lib/utils';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Card } from '../components/ui/Card';
@@ -73,6 +74,7 @@ export default function Dashboard() {
   const { data: allInvoices, isLoading: invoicesLoading } = useInvoices();
   const { data: allFees, isLoading: feesLoading } = useFreelancerFees();
   const { data: allEngagements, isLoading: engLoading } = useEngagements();
+  const { data: allAdvances, isLoading: advancesLoading } = useClientAdvances();
   const reportPeriod = periodFilter === 'all' ? currentMonthKey() : periodFilter;
 
   const filteredInvoices = useMemo(() => {
@@ -139,6 +141,11 @@ export default function Dashboard() {
       if (fee.status === 'paid') cashOut += fee.calculated_fee || 0;
     });
 
+    allAdvances?.forEach((advance) => {
+      cashOut += advance.amount || 0;
+      if (advance.status === 'reimbursed') cashIn += advance.amount || 0;
+    });
+
     const activeEngagements = allEngagements?.filter((e) => e.status === 'ongoing') || [];
     const distinctClientsSet = new Set(activeEngagements.map((e) => e.client_id));
     const topOverdue = allOverdueInvoices
@@ -161,7 +168,8 @@ export default function Dashboard() {
       feesTotalCount: filteredFees.length,
       feesPaidAmount,
       feesPendingAmount,
-      profitCash: revenueReceived - feesPaidAmount,
+      advancesOpenAmount: (allAdvances || []).filter((advance) => advance.status === 'open').reduce((sum, advance) => sum + (advance.amount || 0), 0),
+      profitCash: revenueReceived - feesPaidAmount - (allAdvances || []).filter((advance) => advance.status !== 'reimbursed').reduce((sum, advance) => sum + (advance.amount || 0), 0),
       allOverdueInvoices,
       totalOverdueAmount,
       gap: feesPendingAmount - revenueReceived,
@@ -171,22 +179,25 @@ export default function Dashboard() {
       topPendingFees,
       netCashflow: { cashIn, cashOut, net: cashIn - cashOut },
     };
-  }, [allInvoices, allFees, allEngagements, filteredInvoices, filteredFees]);
+  }, [allInvoices, allFees, allEngagements, allAdvances, filteredInvoices, filteredFees]);
 
   const monthlyData = useMemo(() => {
     const months = lastNMonths(6).reverse();
     return months.map((month) => {
       const invoices = allInvoices?.filter((inv) => invoiceBillingMonth(inv) === month.value) || [];
       const fees = allFees?.filter((fee) => fee.period_month === month.value) || [];
+      const advances = allAdvances?.filter((advance) => advance.period_month === month.value) || [];
+      const advanceOut = advances.reduce((sum, advance) => sum + (advance.amount || 0), 0);
+      const advanceIn = advances.filter((advance) => advance.status === 'reimbursed').reduce((sum, advance) => sum + (advance.amount || 0), 0);
       return {
         month: month.label.split(' ')[0],
-        revenue: invoices.reduce((sum, inv) => sum + (inv.total_paid || 0), 0),
+        revenue: invoices.reduce((sum, inv) => sum + (inv.total_paid || 0), 0) + advanceIn,
         issued: invoices.reduce((sum, inv) => sum + (inv.amount || 0), 0),
-        fees: fees.reduce((sum, fee) => sum + (fee.calculated_fee || 0), 0),
-        profit: invoices.reduce((sum, inv) => sum + (inv.total_paid || 0), 0) - fees.reduce((sum, fee) => sum + (fee.calculated_fee || 0), 0),
+        fees: fees.reduce((sum, fee) => sum + (fee.calculated_fee || 0), 0) + advanceOut,
+        profit: invoices.reduce((sum, inv) => sum + (inv.total_paid || 0), 0) + advanceIn - fees.reduce((sum, fee) => sum + (fee.calculated_fee || 0), 0) - advanceOut,
       };
     });
-  }, [allInvoices, allFees]);
+  }, [allInvoices, allFees, allAdvances]);
 
   const ownerInsights = useMemo(() => {
     const invoices = allInvoices || [];
@@ -367,7 +378,7 @@ export default function Dashboard() {
       .filter((status) => status.value > 0);
   }, [allInvoices]);
 
-  if (invoicesLoading || feesLoading || engLoading) {
+  if (invoicesLoading || feesLoading || engLoading || advancesLoading) {
     return (
       <div className="animate-pulse space-y-5">
         <div className="h-24 rounded-xl bg-gray-200" />
@@ -460,7 +471,7 @@ export default function Dashboard() {
               <AnimatedNumber value={metrics.netCashflow.net} prefix={metrics.netCashflow.net < 0 ? '-Rp ' : 'Rp '} formatter={(v) => formatCurrency(Math.abs(v))} />
             </h2>
             <p className="mt-3 max-w-2xl text-sm text-gray-500">
-              All-time cash in minus paid freelancer fees. Charts below animate from live Supabase data.
+              All-time cash in minus paid freelancer fees and client talangan. Reimbursed talangan is counted back as cash in.
             </p>
           </div>
           <div className="grid grid-cols-2 border-t border-gray-100 bg-gray-50 lg:border-l lg:border-t-0">
@@ -484,7 +495,7 @@ export default function Dashboard() {
         <StatCard label="Revenue Issued" value={metrics.revenueIssued} count={`${metrics.revenueIssuedCount} invoices`} icon={FileText} tone="blue" delay={0.02} />
         <StatCard label="Revenue Received" value={metrics.revenueReceived} count={`${metrics.revenueReceivedCount} paid`} icon={Banknote} tone="blue" trend="cash in" delay={0.08} />
         <StatCard label="Outstanding" value={metrics.outstandingAmount} count={`${metrics.outstandingCount} unpaid, ${metrics.outstandingOverdueCount} overdue`} icon={CreditCard} tone="amber" delay={0.14} />
-        <StatCard label="Profit Cash" value={metrics.profitCash} count="Received minus paid fees" icon={TrendingUp} tone={metrics.profitCash < 0 ? 'red' : 'dark'} delay={0.2} />
+        <StatCard label="Profit Cash" value={metrics.profitCash} count={`Received minus paid fees and Rp ${formatCurrency(metrics.advancesOpenAmount)} open talangan`} icon={TrendingUp} tone={metrics.profitCash < 0 ? 'red' : 'dark'} delay={0.2} />
       </section>
 
       {alertElement}

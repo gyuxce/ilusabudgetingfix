@@ -86,6 +86,22 @@ CREATE TABLE IF NOT EXISTS invoice_payments (
     created_at timestamptz NOT NULL DEFAULT now()
 );
 
+-- ===== client_advances =====
+CREATE TABLE IF NOT EXISTS client_advances (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    client_id uuid NOT NULL REFERENCES clients(id) ON DELETE RESTRICT,
+    title text NOT NULL,
+    category text NOT NULL DEFAULT 'other' CHECK (category IN ('ads', 'tools', 'production', 'operational', 'other')),
+    amount integer NOT NULL CHECK (amount > 0),
+    spend_date date NOT NULL DEFAULT CURRENT_DATE,
+    period_month text NOT NULL,
+    status text NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'reimbursed', 'written_off')),
+    reimbursed_date date,
+    notes text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now()
+);
+
 -- ===== freelancer_fees =====
 CREATE TABLE IF NOT EXISTS freelancer_fees (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -285,6 +301,11 @@ CREATE INDEX IF NOT EXISTS idx_invoices_due_date ON invoices(due_date);
 CREATE INDEX IF NOT EXISTS idx_invoice_payments_invoice ON invoice_payments(invoice_id);
 CREATE INDEX IF NOT EXISTS idx_invoice_payments_date ON invoice_payments(payment_date);
 
+CREATE INDEX IF NOT EXISTS idx_client_advances_client_id ON client_advances(client_id);
+CREATE INDEX IF NOT EXISTS idx_client_advances_period_month ON client_advances(period_month);
+CREATE INDEX IF NOT EXISTS idx_client_advances_status ON client_advances(status);
+CREATE INDEX IF NOT EXISTS idx_client_advances_spend_date ON client_advances(spend_date DESC);
+
 CREATE INDEX IF NOT EXISTS idx_freelancer_fees_freelancer_id ON freelancer_fees(freelancer_id);
 CREATE INDEX IF NOT EXISTS idx_freelancer_fees_engagement_id ON freelancer_fees(engagement_id);
 CREATE INDEX IF NOT EXISTS idx_freelancer_fees_period_month ON freelancer_fees(period_month);
@@ -329,6 +350,10 @@ CREATE TRIGGER trg_engagements_updated_at BEFORE UPDATE ON engagements FOR EACH 
 -- Trigger invoices
 DROP TRIGGER IF EXISTS trg_invoices_updated_at ON invoices;
 CREATE TRIGGER trg_invoices_updated_at BEFORE UPDATE ON invoices FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+-- Trigger client_advances
+DROP TRIGGER IF EXISTS trg_client_advances_updated_at ON client_advances;
+CREATE TRIGGER trg_client_advances_updated_at BEFORE UPDATE ON client_advances FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 -- Trigger freelancer_fees
 DROP TRIGGER IF EXISTS trg_freelancer_fees_updated_at ON freelancer_fees;
@@ -395,6 +420,7 @@ ALTER TABLE services ENABLE ROW LEVEL SECURITY;
 ALTER TABLE engagements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE invoices ENABLE ROW LEVEL SECURITY;
 ALTER TABLE invoice_payments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE client_advances ENABLE ROW LEVEL SECURITY;
 ALTER TABLE freelancer_fees ENABLE ROW LEVEL SECURITY;
 ALTER TABLE proposals ENABLE ROW LEVEL SECURITY;
 ALTER TABLE proposal_items ENABLE ROW LEVEL SECURITY;
@@ -420,6 +446,9 @@ CREATE POLICY invoices_authenticated_all ON invoices FOR ALL TO authenticated US
 
 DROP POLICY IF EXISTS invoice_payments_authenticated_all ON invoice_payments;
 CREATE POLICY invoice_payments_authenticated_all ON invoice_payments FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS client_advances_authenticated_all ON client_advances;
+CREATE POLICY client_advances_authenticated_all ON client_advances FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
 DROP POLICY IF EXISTS freelancer_fees_authenticated_all ON freelancer_fees;
 CREATE POLICY freelancer_fees_authenticated_all ON freelancer_fees FOR ALL TO authenticated USING (true) WITH CHECK (true);
