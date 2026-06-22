@@ -210,7 +210,7 @@ export default function Receivables() {
         title="Piutang"
         description="Catatan manual untuk uang client yang dibayarkan dulu oleh PT."
         action={
-          <Button onClick={openAddModal} disabled={!!advancesError}>
+          <Button onClick={openAddModal}>
             <Plus size={16} className="mr-1.5" />
             New Piutang
           </Button>
@@ -219,7 +219,7 @@ export default function Receivables() {
 
       {advancesError && (
         <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-          Tabel Piutang sudah dibuat, tapi Supabase API belum membaca schema terbaru. Jalankan file migrations/2026-06-22-reload-client-advances-api.sql di Supabase SQL Editor, tunggu 10-30 detik, lalu refresh halaman ini.
+          Data Piutang belum bisa dimuat. Coba refresh halaman, lalu cek koneksi Supabase kalau pesan ini masih muncul.
         </div>
       )}
 
