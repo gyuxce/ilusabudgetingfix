@@ -545,8 +545,8 @@ export default function Invoices() {
     const email = companySettings?.email || 'partnership@ilusa.id';
     const bankName = companySettings?.bank_name || 'Bank transfer';
     const bankAccountNumber = companySettings?.bank_account_number || '-';
-    const bankAccountHolder = companySettings?.bank_account_holder || legalName;
-    const companyLogoUrl = companySettings?.logo_url || ILUSA_LOGO_PATH;
+    const bankAccountHolder = 'PT. Inovasi Langkah Usaha';
+    const companyLogoUrl = ILUSA_LOGO_PATH;
     const companyLogo = companyLogoUrl
       ? `<img class="logo-image" src="${escapeHtml(companyLogoUrl)}" alt="${escapeHtml(brandName)} logo" />`
       : `<div class="logo-fallback">IL</div>`;
@@ -598,9 +598,9 @@ export default function Invoices() {
              .brand-panel { flex: 1; color: #111827; }
              .meta-panel { width: 76mm; background: #fff; }
              .brand-row { display: flex; align-items: center; gap: 11px; }
-             .logo-image, .logo-fallback { width: 42px; height: 42px; border-radius: 8px; object-fit: contain; }
+             .logo-image, .logo-fallback { width: 58px; height: 58px; border-radius: 8px; object-fit: contain; }
              .logo-fallback { display: grid; place-items: center; background: #111827; color: #fff; font-size: 15px; font-weight: 800; }
-             .client-logo { width: 36px; height: 36px; border-radius: 7px; object-fit: contain; float: right; margin-left: 10px; }
+             .client-logo { width: 88px; height: 58px; border-radius: 7px; object-fit: contain; float: right; margin-left: 12px; }
              .brand { font-size: 25px; font-weight: 800; letter-spacing: -0.02em; }
             .muted { color: #6b7280; }
              .light { color: #6b7280; }
@@ -792,7 +792,14 @@ export default function Invoices() {
     printWindow.document.write(getInvoicePrintHtml(invoice));
     printWindow.document.close();
     printWindow.focus();
-    setTimeout(() => printWindow.print(), 250);
+    const imageLoads = Array.from(printWindow.document.images).map((image) => {
+      if (image.complete) return Promise.resolve();
+      return new Promise((resolve) => {
+        image.addEventListener('load', resolve, { once: true });
+        image.addEventListener('error', resolve, { once: true });
+      });
+    });
+    Promise.all(imageLoads).then(() => setTimeout(() => printWindow.print(), 100));
   };
 
   // --- Columns ---

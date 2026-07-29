@@ -8,7 +8,6 @@ const bundledClientLogos = {
 export const ILUSA_LOGO_PATH = '/logos/ilusa.jpg';
 
 export function getClientLogo(client) {
-  if (client?.logo_url) return client.logo_url;
   const name = String(client?.company_name || '').trim().toLowerCase();
-  return bundledClientLogos[name] || '';
+  return bundledClientLogos[name] || client?.logo_url || '';
 }

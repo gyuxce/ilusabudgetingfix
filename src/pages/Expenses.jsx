@@ -465,7 +465,7 @@ export default function Expenses() {
             </div>
           </div>
 
-          <div className="min-h-[430px]">
+          <div className="min-h-[360px] space-y-3">
           {formData.type === 'client' ? (
             <>
               <Select

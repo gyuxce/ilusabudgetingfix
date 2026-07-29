@@ -73,7 +73,12 @@ export default function Engagements() {
       filtered = filtered.filter(eng => eng.client_id === filterClient);
     }
 
-    return filtered;
+    const statusOrder = { ongoing: 0, hold: 1, finished: 2 };
+    return [...filtered].sort((a, b) => {
+      const statusDifference = (statusOrder[a.status] ?? 1) - (statusOrder[b.status] ?? 1);
+      if (statusDifference !== 0) return statusDifference;
+      return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+    });
   }, [engagements, search, filterStatus, filterClient]);
 
   const handleOpenAdd = () => {
