@@ -7,8 +7,6 @@ import {
   Package,
   Briefcase,
   FileText,
-  ChartNoAxesCombined,
-  Wallet,
   WalletCards,
   LogOut,
 } from 'lucide-react';
@@ -17,16 +15,17 @@ import { useAuth } from '../lib/AuthContext';
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/clients', label: 'Client', icon: Building2 },
-  { to: '/freelancers', label: 'Freelancers', icon: Users },
-  { to: '/services', label: 'Services', icon: Package },
   { to: '/engagements', label: 'Project', icon: Briefcase },
   { to: '/invoices', label: 'Invoice', icon: FileText },
-  { to: '/fees', label: 'Bayar Freelancer', icon: Wallet },
-  { to: '/receivables', label: 'Piutang', icon: WalletCards },
-  { to: '/payroll-analytics', label: 'Payroll', icon: ChartNoAxesCombined },
+  { to: '/expenses', label: 'Pengeluaran', icon: WalletCards },
 ];
 
-const mobileNavItems = navItems.filter((item) => ['/', '/invoices', '/fees', '/receivables', '/payroll-analytics'].includes(item.to));
+const secondaryNavItems = [
+  { to: '/freelancers', label: 'Freelancer', icon: Users },
+  { to: '/services', label: 'Layanan', icon: Package },
+];
+
+const mobileNavItems = navItems;
 
 function BrandMark() {
   return (
@@ -77,6 +76,10 @@ export default function Layout() {
 
         <nav className="mt-8 flex-1 space-y-1">
           {navItems.map((item) => (
+            <NavItem key={item.to} item={item} />
+          ))}
+          <p className="px-3 pb-1 pt-6 text-[10px] font-semibold uppercase tracking-[0.16em] text-gray-400">Data pendukung</p>
+          {secondaryNavItems.map((item) => (
             <NavItem key={item.to} item={item} />
           ))}
         </nav>

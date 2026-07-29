@@ -10,6 +10,7 @@ import Services from './pages/Services';
 import Engagements from './pages/Engagements';
 import Invoices from './pages/Invoices';
 import Fees from './pages/Fees';
+import Expenses from './pages/Expenses';
 import PayrollAnalytics from './pages/PayrollAnalytics';
 import Receivables from './pages/Receivables';
 
@@ -30,6 +31,7 @@ export default function App() {
         <Route path="engagements" element={<Engagements />} />
         <Route path="invoices" element={<Invoices />} />
         <Route path="fees" element={<Fees />} />
+        <Route path="expenses" element={<Expenses />} />
         <Route path="receivables" element={<Receivables />} />
         <Route path="payroll-analytics" element={<PayrollAnalytics />} />
       </Route>

@@ -89,6 +89,12 @@ export default function Dashboard() {
     return allFees.filter((fee) => fee.period_month === periodFilter);
   }, [allFees, periodFilter]);
 
+  const filteredAdvances = useMemo(() => {
+    if (!allAdvances) return [];
+    if (periodFilter === 'all') return allAdvances;
+    return allAdvances.filter((advance) => advance.period_month === periodFilter);
+  }, [allAdvances, periodFilter]);
+
   const metrics = useMemo(() => {
     let revenueIssued = 0;
     let revenueReceived = 0;
@@ -129,8 +135,11 @@ export default function Dashboard() {
     const allOverdueInvoices = [];
     let totalOverdueAmount = 0;
 
-    allInvoices?.forEach((inv) => {
+    filteredInvoices.forEach((inv) => {
       cashIn += inv.total_paid || 0;
+    });
+
+    allInvoices?.forEach((inv) => {
       if (inv.computed_status === 'overdue') {
         allOverdueInvoices.push(inv);
         totalOverdueAmount += inv.balance || 0;
@@ -141,7 +150,7 @@ export default function Dashboard() {
       if (fee.status === 'paid') cashOut += fee.calculated_fee || 0;
     });
 
-    allAdvances?.forEach((advance) => {
+    filteredAdvances.forEach((advance) => {
       cashOut += advance.amount || 0;
       if (advance.status === 'reimbursed') cashIn += advance.amount || 0;
     });
@@ -168,8 +177,8 @@ export default function Dashboard() {
       feesTotalCount: filteredFees.length,
       feesPaidAmount,
       feesPendingAmount,
-      advancesOpenAmount: (allAdvances || []).filter((advance) => advance.status === 'open').reduce((sum, advance) => sum + (advance.amount || 0), 0),
-      profitCash: revenueReceived - feesPaidAmount - (allAdvances || []).filter((advance) => advance.status !== 'reimbursed').reduce((sum, advance) => sum + (advance.amount || 0), 0),
+      advancesOpenAmount: filteredAdvances.filter((advance) => advance.status === 'open').reduce((sum, advance) => sum + (advance.amount || 0), 0),
+      profitCash: cashIn - cashOut,
       allOverdueInvoices,
       totalOverdueAmount,
       gap: feesPendingAmount - revenueReceived,
@@ -179,7 +188,7 @@ export default function Dashboard() {
       topPendingFees,
       netCashflow: { cashIn, cashOut, net: cashIn - cashOut },
     };
-  }, [allInvoices, allFees, allEngagements, allAdvances, filteredInvoices, filteredFees]);
+  }, [allInvoices, allFees, allEngagements, allAdvances, filteredInvoices, filteredFees, filteredAdvances]);
 
   const monthlyData = useMemo(() => {
     const months = lastNMonths(6).reverse();
@@ -462,12 +471,12 @@ export default function Dashboard() {
       <section className="mb-6 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm shadow-gray-950/5">
         <div className="grid gap-0 lg:grid-cols-[1.4fr_1fr]">
           <div className="p-6 sm:p-7">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-500">Cash Saat Ini</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-500">Net Kas Tercatat</p>
             <h2 className="mt-3 text-3xl font-bold tracking-tight text-gray-950 sm:text-4xl">
               <AnimatedNumber value={metrics.netCashflow.net} prefix={metrics.netCashflow.net < 0 ? '-Rp ' : 'Rp '} formatter={(v) => formatCurrency(Math.abs(v))} />
             </h2>
             <p className="mt-3 max-w-2xl text-sm text-gray-500">
-              Uang masuk dikurangi fee freelancer yang sudah dibayar dan talangan client. Talangan yang sudah diganti client dihitung masuk kembali.
+              Uang masuk dikurangi pembayaran freelancer dan talangan client. Talangan yang sudah diganti client dihitung masuk kembali. Saldo awal bank belum termasuk.
             </p>
           </div>
           <div className="grid grid-cols-2 border-t border-gray-100 bg-gray-50 lg:border-l lg:border-t-0">
@@ -489,9 +498,9 @@ export default function Dashboard() {
 
       <section className="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Invoice Dibuat" value={metrics.revenueIssued} count={`${metrics.revenueIssuedCount} invoice`} icon={FileText} tone="blue" delay={0.02} />
-        <StatCard label="Uang Masuk" value={metrics.revenueReceived} count={`${metrics.revenueReceivedCount} invoice lunas`} icon={Banknote} tone="blue" trend="cash in" delay={0.08} />
+        <StatCard label="Uang Masuk" value={metrics.revenueReceived} count={`${metrics.revenueReceivedCount} invoice lunas`} icon={Banknote} tone="blue" trend="masuk" delay={0.08} />
         <StatCard label="Client Belum Bayar" value={metrics.outstandingAmount} count={`${metrics.outstandingCount} invoice belum lunas, ${metrics.outstandingOverdueCount} overdue`} icon={CreditCard} tone="amber" delay={0.14} />
-        <StatCard label="Sisa Cash" value={metrics.profitCash} count={`Sudah memperhitungkan Rp ${formatCurrency(metrics.advancesOpenAmount)} talangan terbuka`} icon={TrendingUp} tone={metrics.profitCash < 0 ? 'red' : 'dark'} delay={0.2} />
+        <StatCard label="Net Kas Tercatat" value={metrics.profitCash} count={`Termasuk Rp ${formatCurrency(metrics.advancesOpenAmount)} talangan terbuka`} icon={TrendingUp} tone={metrics.profitCash < 0 ? 'red' : 'dark'} delay={0.2} />
       </section>
 
       {alertElement}
