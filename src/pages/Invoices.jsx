@@ -225,7 +225,7 @@ export default function Invoices() {
       engagement_id: engagements?.[0]?.id || '',
       billing_month: defaultBillingMonth,
       period_month: defaultServicePeriod,
-      invoice_number: generateInvoiceNumber(defaultIssueDate, getNextInvoiceSequence(invoices)),
+      invoice_number: generateInvoiceNumber(defaultServicePeriod, getNextInvoiceSequence(invoices)),
       amount: engagements?.[0]?.service_fee_per_month || 0,
       issue_date: defaultIssueDate,
       due_date: defaultDueDate,
@@ -296,7 +296,7 @@ export default function Invoices() {
       const payload = {
         ...formData,
         amount: fee,
-        invoice_number: formData.invoice_number.trim() || generateInvoiceNumber(formData.issue_date, getNextInvoiceSequence(invoices)),
+        invoice_number: formData.invoice_number.trim() || generateInvoiceNumber(formData.period_month || formData.issue_date, getNextInvoiceSequence(invoices)),
         notes: formData.notes.trim() || null,
         billing_month: formData.billing_month || (formData.issue_date ? formData.issue_date.slice(0, 7) : null),
         period_month: formData.period_month || null
@@ -386,7 +386,7 @@ export default function Invoices() {
           issue_date,
           due_date,
           status: bulkFormData.status || 'draft',
-          invoice_number: generateInvoiceNumber(issue_date, getNextInvoiceSequence(invoices, index)),
+          invoice_number: generateInvoiceNumber(period || issue_date, getNextInvoiceSequence(invoices, index)),
           paid_date: null,
           notes: `Invoice for service period ${formatPeriod(period)}. Billing month ${formatPeriod(billingMonth)}.`
         };
@@ -434,7 +434,7 @@ export default function Invoices() {
   };
 
   const getInvoicePrintHtml = (invoice) => {
-    const invoiceNumber = invoice.invoice_number || generateInvoiceNumber(invoice.issue_date, 1);
+    const invoiceNumber = invoice.invoice_number || generateInvoiceNumber(invoice.period_month || invoice.issue_date, 1);
     const clientName = invoice.engagement?.client?.company_name || '-';
     const serviceName = invoice.engagement?.service?.name || '-';
     const billingMonth = formatPeriod(invoice.effective_billing_month || invoice.billing_month || invoice.issue_date?.slice(0, 7));
