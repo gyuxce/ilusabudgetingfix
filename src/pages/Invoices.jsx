@@ -114,7 +114,10 @@ export default function Invoices() {
   const defaultServicePeriod = getPreviousMonthKey(defaultBillingMonth);
   
   const [formData, setFormData] = useState({
+    client_id: '',
     engagement_id: '',
+    engagement_ids: [],
+    amounts: {},
     billing_month: defaultBillingMonth,
     period_month: defaultServicePeriod,
     invoice_number: '',
@@ -220,13 +223,19 @@ export default function Invoices() {
 
   // --- Invoice Single Modal Handlers ---
   const handleOpenAdd = () => {
+    const clientId = clients?.[0]?.id || '';
+    const clientEngagements = engagements?.filter((engagement) => engagement.client_id === clientId) || [];
+    const firstEngagement = clientEngagements[0];
     setEditingInvoice(null);
     setFormData({
-      engagement_id: engagements?.[0]?.id || '',
+      client_id: clientId,
+      engagement_id: firstEngagement?.id || '',
+      engagement_ids: firstEngagement ? [firstEngagement.id] : [],
+      amounts: firstEngagement ? { [firstEngagement.id]: firstEngagement.service_fee_per_month || 0 } : {},
       billing_month: defaultBillingMonth,
       period_month: defaultServicePeriod,
       invoice_number: generateInvoiceNumber(defaultServicePeriod, getNextInvoiceSequence(invoices)),
-      amount: engagements?.[0]?.service_fee_per_month || 0,
+      amount: firstEngagement?.service_fee_per_month || 0,
       issue_date: defaultIssueDate,
       due_date: defaultDueDate,
       status: 'draft',
@@ -240,7 +249,10 @@ export default function Invoices() {
     e?.stopPropagation();
     setEditingInvoice(inv);
     setFormData({
+      client_id: inv.engagement?.client?.id || '',
       engagement_id: inv.engagement_id || '',
+      engagement_ids: [inv.engagement_id].filter(Boolean),
+      amounts: { [inv.engagement_id]: inv.amount || 0 },
       billing_month: inv.effective_billing_month || inv.billing_month || (inv.issue_date ? inv.issue_date.slice(0, 7) : defaultBillingMonth),
       period_month: inv.period_month || '',
       invoice_number: inv.invoice_number || '',
@@ -252,6 +264,36 @@ export default function Invoices() {
     });
     setFormError('');
     setIsModalOpen(true);
+  };
+
+  const handleClientChange = (event) => {
+    const clientId = event.target.value;
+    const clientEngagements = engagements?.filter((engagement) => engagement.client_id === clientId) || [];
+    const firstEngagement = clientEngagements[0];
+    setFormData((previous) => ({
+      ...previous,
+      client_id: clientId,
+      engagement_id: firstEngagement?.id || '',
+      engagement_ids: firstEngagement ? [firstEngagement.id] : [],
+      amounts: firstEngagement ? { [firstEngagement.id]: firstEngagement.service_fee_per_month || 0 } : {},
+      amount: firstEngagement?.service_fee_per_month || 0,
+    }));
+  };
+
+  const toggleInvoiceEngagement = (engagementId) => {
+    setFormData((previous) => {
+      const isSelected = previous.engagement_ids.includes(engagementId);
+      const engagement = engagements?.find((item) => item.id === engagementId);
+      return {
+        ...previous,
+        engagement_ids: isSelected
+          ? previous.engagement_ids.filter((id) => id !== engagementId)
+          : [...previous.engagement_ids, engagementId],
+        amounts: isSelected
+          ? Object.fromEntries(Object.entries(previous.amounts).filter(([id]) => id !== engagementId))
+          : { ...previous.amounts, [engagementId]: engagement?.service_fee_per_month || 0 },
+      };
+    });
   };
 
   const handleEngagementChange = (e) => {
@@ -270,14 +312,18 @@ export default function Invoices() {
     e.preventDefault();
     setFormError('');
 
-    if (!formData.engagement_id || !formData.issue_date || !formData.due_date || !formData.status) {
+    const selectedEngagementIds = editingInvoice ? [formData.engagement_id].filter(Boolean) : formData.engagement_ids;
+    if (selectedEngagementIds.length === 0 || !formData.issue_date || !formData.due_date || !formData.status) {
       setFormError('Please fill out all required fields.');
       return;
     }
 
-    const fee = parseInt(formData.amount, 10);
-    if (isNaN(fee) || fee < 0) {
-      setFormError('Amount must be zero or a positive number.');
+    const amounts = selectedEngagementIds.map((engagementId) => ({
+      engagementId,
+      amount: parseInt(editingInvoice ? formData.amount : formData.amounts[engagementId], 10),
+    }));
+    if (amounts.some(({ amount }) => Number.isNaN(amount) || amount < 0)) {
+      setFormError('Nominal invoice harus nol atau angka positif.');
       return;
     }
 
@@ -286,30 +332,52 @@ export default function Invoices() {
       return;
     }
 
-    const selectedEngagement = engagements?.find(e => e.id === formData.engagement_id);
-    if (selectedEngagement?.service?.service_type === 'monthly' && !formData.period_month) {
+    const selectedEngagements = selectedEngagementIds
+      .map((engagementId) => engagements?.find((engagement) => engagement.id === engagementId))
+      .filter(Boolean);
+    if (selectedEngagements.some((engagement) => engagement.service?.service_type === 'monthly') && !formData.period_month) {
       setFormError('Period Month is required for monthly engagements.');
       return;
     }
 
     try {
-      const payload = {
-        ...formData,
-        amount: fee,
-        invoice_number: formData.invoice_number.trim() || generateInvoiceNumber(formData.period_month || formData.issue_date, getNextInvoiceSequence(invoices)),
-        notes: formData.notes.trim() || null,
-        billing_month: formData.billing_month || (formData.issue_date ? formData.issue_date.slice(0, 7) : null),
-        period_month: formData.period_month || null
-      };
-
       if (editingInvoice) {
+        const payload = {
+          engagement_id: formData.engagement_id,
+          billing_month: formData.billing_month || (formData.issue_date ? formData.issue_date.slice(0, 7) : null),
+          period_month: formData.period_month || null,
+          invoice_number: formData.invoice_number.trim() || generateInvoiceNumber(formData.period_month || formData.issue_date, getNextInvoiceSequence(invoices)),
+          amount: amounts[0].amount,
+          issue_date: formData.issue_date,
+          due_date: formData.due_date,
+          status: formData.status,
+          notes: formData.notes.trim() || null,
+        };
         await updateInvoice.mutateAsync({ id: editingInvoice.id, ...payload });
       } else {
-        await createInvoice.mutateAsync(payload);
+        const invoicePayloads = amounts.map(({ engagementId, amount }, index) => ({
+          engagement_id: engagementId,
+          billing_month: formData.billing_month || (formData.issue_date ? formData.issue_date.slice(0, 7) : null),
+          period_month: formData.period_month || null,
+          invoice_number: selectedEngagementIds.length === 1 && formData.invoice_number.trim()
+            ? formData.invoice_number.trim()
+            : generateInvoiceNumber(formData.period_month || formData.issue_date, getNextInvoiceSequence(invoices, index)),
+          amount,
+          issue_date: formData.issue_date,
+          due_date: formData.due_date,
+          status: formData.status,
+          paid_date: null,
+          notes: formData.notes.trim() || null,
+        }));
+        if (invoicePayloads.length === 1) {
+          await createInvoice.mutateAsync(invoicePayloads[0]);
+        } else {
+          await createInvoicesBulk.mutateAsync(invoicePayloads);
+        }
       }
       
       setIsModalOpen(false);
-      showToast(editingInvoice ? 'Invoice updated!' : 'Invoice created!');
+      showToast(editingInvoice ? 'Invoice updated!' : `${selectedEngagementIds.length} invoice berhasil dibuat!`);
     } catch (err) {
       setFormError(err.message);
     }
@@ -789,6 +857,15 @@ export default function Invoices() {
   }
 
   const selectedEngagementObj = engagements?.find(e => e.id === formData.engagement_id);
+  const clientInvoiceEngagements = engagements?.filter((engagement) => engagement.client_id === formData.client_id) || [];
+  const selectedInvoiceEngagements = clientInvoiceEngagements.filter((engagement) => formData.engagement_ids.includes(engagement.id));
+  const selectedInvoiceTotal = selectedInvoiceEngagements.reduce(
+    (total, engagement) => total + (parseInt(formData.amounts[engagement.id], 10) || 0),
+    0,
+  );
+  const selectedInvoiceRequiresPeriod = editingInvoice
+    ? selectedEngagementObj?.service?.service_type === 'monthly'
+    : selectedInvoiceEngagements.some((engagement) => engagement.service?.service_type === 'monthly');
   const monthlyEngagements = engagements?.filter(e => e.service?.service_type === 'monthly') || [];
   const selectedBulkEngagementObj = engagements?.find(e => e.id === bulkFormData.engagement_id);
 
@@ -973,7 +1050,7 @@ export default function Invoices() {
         footer={
           <>
             <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-            <Button type="button" onClick={handleSubmit} disabled={createInvoice.isPending || updateInvoice.isPending}>
+            <Button type="button" onClick={handleSubmit} disabled={createInvoice.isPending || createInvoicesBulk.isPending || updateInvoice.isPending}>
               {editingInvoice ? "Update" : "Save"}
             </Button>
           </>
@@ -990,6 +1067,7 @@ export default function Invoices() {
             Invoice hanya mencatat tagihan. Uang masuk dicatat terpisah lewat tombol pembayaran setelah client membayar.
           </div>
 
+          {editingInvoice && (
           <div>
             <Select 
               label="Engagement *" 
@@ -1003,6 +1081,64 @@ export default function Invoices() {
             />
             <p className="text-xs text-gray-500 mt-1">Pick the engagement this invoice is for</p>
           </div>
+          )}
+
+          {!editingInvoice && (
+            <>
+              <Select
+                label="Client *"
+                required
+                value={formData.client_id}
+                onChange={handleClientChange}
+                options={[
+                  { value: '', label: 'Pilih client...' },
+                  ...(clients?.map((client) => ({ value: client.id, label: client.company_name })) || [])
+                ]}
+              />
+              <div>
+                <p className="block text-sm font-medium text-gray-700 mb-1.5">Service yang ditagihkan *</p>
+                <div className="space-y-2 rounded-md border border-gray-300 bg-gray-50 p-3 max-h-56 overflow-y-auto">
+                  {clientInvoiceEngagements.map((engagement) => {
+                    const checked = formData.engagement_ids.includes(engagement.id);
+                    return (
+                      <div key={engagement.id} className="rounded-md border border-gray-200 bg-white p-2.5">
+                        <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-800">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => toggleInvoiceEngagement(engagement.id)}
+                            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span>{engagement.service?.name || 'Service'}</span>
+                          <span className="text-xs text-gray-500">({engagement.service?.service_type === 'monthly' ? 'Monthly' : 'One-time'})</span>
+                        </label>
+                        {checked && (
+                          <CurrencyInput
+                            className="mt-2"
+                            label="Nilai service"
+                            min="0"
+                            required
+                            value={formData.amounts[engagement.id] ?? 0}
+                            onChange={(event) => setFormData((previous) => ({
+                              ...previous,
+                              amounts: { ...previous.amounts, [engagement.id]: event.target.value },
+                            }))}
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
+                  {clientInvoiceEngagements.length === 0 && (
+                    <p className="text-sm text-gray-500">Client ini belum memiliki project/service.</p>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Setiap service yang dicentang dibuat sebagai satu invoice agar pembayaran dan laporan tetap terpisah.</p>
+                {selectedInvoiceEngagements.length > 1 && (
+                  <p className="text-sm font-medium text-gray-700 mt-2">Total pilihan: Rp {formatCurrency(selectedInvoiceTotal)}</p>
+                )}
+              </div>
+            </>
+          )}
 
           <Input
             label="Bulan Tagihan *"
@@ -1015,35 +1151,43 @@ export default function Invoices() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Input 
-                label={selectedEngagementObj?.service?.service_type === 'monthly' ? "Periode Jasa *" : "Periode Jasa"}
+                label={selectedInvoiceRequiresPeriod ? "Periode Jasa *" : "Periode Jasa"}
                 type="month"
                 value={formData.period_month}
                 onChange={e => setFormData({...formData, period_month: e.target.value})}
               />
               <p className="text-xs text-gray-500 mt-1">
-                {selectedEngagementObj?.service?.service_type === 'monthly' ? "Contoh: jasa Mei ditagihkan pada Juni." : "Boleh kosong untuk pekerjaan satu kali."}
+                {selectedInvoiceRequiresPeriod ? "Contoh: jasa Mei ditagihkan pada Juni." : "Boleh kosong untuk pekerjaan satu kali."}
               </p>
             </div>
             <div>
-              <Input 
-                label="Nomor Invoice"
-                placeholder="INV-2026-001"
-                value={formData.invoice_number}
-                onChange={e => setFormData({...formData, invoice_number: e.target.value})}
-              />
+              {editingInvoice || formData.engagement_ids.length <= 1 ? (
+                <Input
+                  label="Nomor Invoice"
+                  placeholder="080/INV/SO/VII/26"
+                  value={formData.invoice_number}
+                  onChange={e => setFormData({...formData, invoice_number: e.target.value})}
+                />
+              ) : (
+                <div className="rounded-md border border-gray-200 bg-gray-50 p-3 text-sm text-gray-600">
+                  Nomor invoice untuk beberapa service akan dibuat otomatis berurutan.
+                </div>
+              )}
             </div>
           </div>
 
-          <div>
-            <CurrencyInput
-              label="Nilai Tagihan *"
-              min="0"
-              required
-              value={formData.amount}
-              onChange={e => setFormData({...formData, amount: e.target.value})}
-            />
-            <p className="text-xs text-gray-500 mt-1">Terisi dari project, masih bisa diedit.</p>
-          </div>
+          {editingInvoice && (
+            <div>
+              <CurrencyInput
+                label="Nilai Tagihan *"
+                min="0"
+                required
+                value={formData.amount}
+                onChange={e => setFormData({...formData, amount: e.target.value})}
+              />
+              <p className="text-xs text-gray-500 mt-1">Terisi dari project, masih bisa diedit.</p>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <Input 
