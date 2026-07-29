@@ -40,10 +40,12 @@ const addMonthsToPeriodKey = (periodKey, amount) => {
   return `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}`;
 };
 
+const ROMAN_MONTHS = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
+
 const generateInvoiceNumber = (issueDate, sequence = 1) => {
   const safeIssueDate = issueDate || format(new Date(), 'yyyy-MM-dd');
-  const [year, month] = safeIssueDate.split('-');
-  return `ILUSA-INV-${year}-${month}-${String(sequence).padStart(3, '0')}`;
+  const [year, month] = safeIssueDate.split('-').map(Number);
+  return `${String(sequence).padStart(3, '0')}/INV/SO/${ROMAN_MONTHS[month]}/${String(year).slice(-2)}`;
 };
 
 const extractInvoiceSequence = (invoiceNumber) => {
