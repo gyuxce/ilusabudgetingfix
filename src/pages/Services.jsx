@@ -59,7 +59,7 @@ export default function Services() {
     setFormError('');
 
     if (!formData.name.trim()) {
-      setFormError('Name is required');
+        setFormError('Nama layanan wajib diisi.');
       return;
     }
 
@@ -72,7 +72,7 @@ export default function Services() {
       setIsModalOpen(false);
     } catch (err) {
       if (err.message.includes('unique constraint') || err.message.includes('services_name_service_type_key') || err.message.includes('already exists') || err.message.includes('duplicate key value')) {
-        setFormError('A service with this name and type already exists. Try different name or type.');
+        setFormError('Layanan dengan nama dan jenis ini sudah ada.');
       } else {
         setFormError(err.message);
       }
@@ -96,18 +96,18 @@ export default function Services() {
   };
 
   const columns = [
-    { key: 'name', label: 'Name', render: (row) => <span className="font-medium text-gray-900">{row.name}</span> },
-    { key: 'service_type', label: 'Type', render: (row) => (
+    { key: 'name', label: 'Nama Layanan', render: (row) => <span className="font-medium text-gray-900">{row.name}</span> },
+    { key: 'service_type', label: 'Jenis', render: (row) => (
       <Badge variant={row.service_type === 'monthly' ? 'success' : 'neutral'}>
-        {row.service_type === 'monthly' ? 'Monthly' : 'One-time'}
+        {row.service_type === 'monthly' ? 'Bulanan' : 'Sekali'}
       </Badge>
     )},
-    { key: 'fee_type', label: 'Fee Calculation', render: (row) => {
-      if (row.fee_type === 'hourly') return <Badge variant="warning">Hourly</Badge>;
-      if (row.fee_type === 'per_content') return <Badge variant="warning">Per Content</Badge>;
-      return <Badge variant="neutral">Fixed</Badge>;
+    { key: 'fee_type', label: 'Cara Hitung', render: (row) => {
+      if (row.fee_type === 'hourly') return <Badge variant="warning">Per Jam</Badge>;
+      if (row.fee_type === 'per_content') return <Badge variant="warning">Per Konten</Badge>;
+      return <Badge variant="neutral">Tetap</Badge>;
     }},
-    { key: 'actions', label: 'Actions', render: (row) => (
+    { key: 'actions', label: 'Aksi', render: (row) => (
       <div className="flex gap-1" onClick={e => e.stopPropagation()}>
         <Button variant="ghost" size="sm" onClick={(e) => handleOpenEdit(row, e)}>
           <Pencil size={14} />
@@ -131,12 +131,12 @@ export default function Services() {
   return (
     <>
       <PageHeader 
-        title="Services" 
-        description="Catalog of services you offer to clients"
+        title="Layanan"
+        description="Daftar jenis pekerjaan yang bisa dipakai di project client."
         action={
           <Button onClick={handleOpenAdd}>
             <Plus size={16} className="mr-1.5" />
-            Add Service
+            Tambah Layanan
           </Button>
         }
       />
@@ -144,16 +144,16 @@ export default function Services() {
       {services?.length === 0 && !search ? (
         <EmptyState 
           icon={Package} 
-          title="No services yet" 
-          description="Add your first service to get started" 
-          action={<Button onClick={handleOpenAdd}>Add Service</Button>}
+          title="Belum ada layanan"
+          description="Tambahkan jenis pekerjaan yang kamu tawarkan ke client."
+          action={<Button onClick={handleOpenAdd}>Tambah Layanan</Button>}
         />
       ) : (
         <div className="space-y-4">
           <div className="max-w-md relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
             <Input 
-              placeholder="Search services..." 
+              placeholder="Cari layanan..."
               value={search}
               onChange={e => setSearch(e.target.value)}
               style={{ paddingLeft: '2.5rem' }}
@@ -164,7 +164,7 @@ export default function Services() {
             columns={columns} 
             rows={filteredServices} 
             onRowClick={(row) => handleOpenEdit(row)}
-            emptyMessage="No services match your search"
+            emptyMessage="Tidak ada layanan yang cocok."
           />
         </div>
       )}
@@ -172,12 +172,12 @@ export default function Services() {
       <Modal 
         open={isModalOpen} 
         onClose={() => setIsModalOpen(false)}
-        title={editingService ? "Edit Service" : "Add Service"}
+        title={editingService ? "Edit Layanan" : "Tambah Layanan"}
         footer={
           <>
-            <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>Cancel</Button>
+            <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>Batal</Button>
             <Button type="button" onClick={handleSubmit} disabled={createService.isPending || updateService.isPending}>
-              {editingService ? "Update" : "Save"}
+              {editingService ? "Simpan Perubahan" : "Simpan"}
             </Button>
           </>
         }
@@ -190,32 +190,32 @@ export default function Services() {
           )}
           <div>
             <Input 
-              label="Name" 
+              label="Nama Layanan *"
               required 
               value={formData.name}
               onChange={e => setFormData({...formData, name: e.target.value})}
             />
             <p className="text-xs text-gray-500 mt-1">
-              You can have same name with different Service Type (e.g. Digital Marketing/Monthly + Digital Marketing/One-time)
+              Nama yang sama boleh digunakan jika jenisnya berbeda, misalnya bulanan dan sekali.
             </p>
           </div>
           <Select 
-            label="Service Type" 
+            label="Jenis Layanan"
             value={formData.service_type}
             onChange={e => setFormData({...formData, service_type: e.target.value})}
             options={[
-              { value: 'monthly', label: 'Monthly Service' },
-              { value: 'one_time', label: 'One-time Service' }
+              { value: 'monthly', label: 'Bulanan' },
+              { value: 'one_time', label: 'Sekali' }
             ]}
           />
           <Select 
-            label="Fee Calculation" 
+            label="Cara Hitung Nominal"
             value={formData.fee_type}
             onChange={e => setFormData({...formData, fee_type: e.target.value})}
             options={[
-              { value: 'fixed', label: 'Fixed Price' },
-              { value: 'hourly', label: 'Hourly Rate' },
-              { value: 'per_content', label: 'Per Content' }
+              { value: 'fixed', label: 'Nominal Tetap' },
+              { value: 'hourly', label: 'Per Jam' },
+              { value: 'per_content', label: 'Per Konten' }
             ]}
           />
         </form>
@@ -227,15 +227,15 @@ export default function Services() {
         title="Confirm Delete"
         footer={
           <>
-            <Button variant="secondary" onClick={() => setDeleteId(null)}>Cancel</Button>
+            <Button variant="secondary" onClick={() => setDeleteId(null)}>Batal</Button>
             <Button variant="danger" onClick={confirmDelete} disabled={deleteService.isPending}>
-              Confirm Delete
+              Hapus Layanan
             </Button>
           </>
         }
       >
         <p className="text-sm text-gray-600">
-          Delete {services?.find(s => s.id === deleteId)?.name}? This may break existing engagements using this service.
+          Hapus {services?.find(s => s.id === deleteId)?.name}? Project yang memakai layanan ini bisa ikut terdampak.
         </p>
       </Modal>
     </>

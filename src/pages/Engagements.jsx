@@ -140,7 +140,7 @@ export default function Engagements() {
     }
 
     if (formData.finish_date && new Date(formData.finish_date) < new Date(formData.start_date)) {
-      setFormError('Finish date cannot be before start date.');
+      setFormError('Tanggal selesai tidak boleh sebelum tanggal mulai.');
       return;
     }
 
@@ -205,22 +205,22 @@ export default function Engagements() {
 
   const columns = [
     { key: 'client', label: 'Client', render: (row) => <span className="font-medium text-gray-900">{row.client?.company_name || '—'}</span> },
-    { key: 'service', label: 'Service', render: (row) => <span className="text-gray-700">{row.service?.name || '—'}</span> },
-    { key: 'type', label: 'Type', render: (row) => (
+    { key: 'service', label: 'Layanan', render: (row) => <span className="text-gray-700">{row.service?.name || '—'}</span> },
+    { key: 'type', label: 'Jenis', render: (row) => (
       row.service ? (
         <Badge variant={row.service.service_type === 'monthly' ? 'success' : 'neutral'}>
-          {row.service.service_type === 'monthly' ? 'Monthly' : 'One-time'}
+          {row.service.service_type === 'monthly' ? 'Bulanan' : 'Sekali' }
         </Badge>
       ) : '—'
     )},
-    { key: 'fee', label: 'Fee/Month', render: (row) => row.service_fee_per_month > 0 ? `Rp ${formatCurrency(row.service_fee_per_month)}` : '—' },
-    { key: 'start', label: 'Start', render: (row) => row.start_date ? format(new Date(row.start_date), 'dd MMM yyyy') : '—' },
+    { key: 'fee', label: 'Nilai/Bulan', render: (row) => row.service_fee_per_month > 0 ? `Rp ${formatCurrency(row.service_fee_per_month)}` : '—' },
+    { key: 'start', label: 'Mulai', render: (row) => row.start_date ? format(new Date(row.start_date), 'dd MMM yyyy') : '—' },
     { key: 'status', label: 'Status', render: (row) => {
-      if (row.status === 'ongoing') return <Badge variant="success">Ongoing</Badge>;
-      if (row.status === 'hold') return <Badge variant="warning">On Hold</Badge>;
-      return <Badge variant="neutral">Finished</Badge>;
+      if (row.status === 'ongoing') return <Badge variant="success">Berjalan</Badge>;
+      if (row.status === 'hold') return <Badge variant="warning">Ditunda</Badge>;
+      return <Badge variant="neutral">Selesai</Badge>;
     }},
-    { key: 'actions', label: 'Actions', render: (row) => (
+    { key: 'actions', label: 'Aksi', render: (row) => (
       <div className="flex gap-1" onClick={e => e.stopPropagation()}>
         <Button variant="ghost" size="sm" onClick={(e) => handleOpenEdit(row, e)}>
           <Pencil size={14} />
@@ -265,12 +265,12 @@ export default function Engagements() {
   return (
     <>
       <PageHeader 
-        title="Engagements" 
-        description="Active and past client service contracts"
+        title="Project"
+        description="Daftar layanan yang sedang atau pernah dikerjakan untuk client."
         action={
           <Button onClick={handleOpenAdd}>
             <Plus size={16} className="mr-1.5" />
-            New Engagement
+            Tambah Project
           </Button>
         }
       />
@@ -278,9 +278,9 @@ export default function Engagements() {
       {engagements?.length === 0 && !search && filterStatus === 'all' && filterClient === 'all' ? (
         <EmptyState 
           icon={Briefcase} 
-          title="No engagements yet" 
-          description="Create your first engagement to start tracking work for clients" 
-          action={<Button onClick={handleOpenAdd}>New Engagement</Button>}
+          title="Belum ada project"
+          description="Tambahkan project pertama untuk mulai mencatat pekerjaan client."
+          action={<Button onClick={handleOpenAdd}>Tambah Project</Button>}
         />
       ) : (
         <div className="space-y-4">
@@ -288,7 +288,7 @@ export default function Engagements() {
             <div className="max-w-xs w-full relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
               <Input 
-                placeholder="Search..." 
+                placeholder="Cari project atau layanan..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 style={{ paddingLeft: '2.5rem' }}
@@ -298,10 +298,10 @@ export default function Engagements() {
               value={filterStatus}
               onChange={e => setFilterStatus(e.target.value)}
               options={[
-                { value: 'all', label: 'All statuses' },
-                { value: 'ongoing', label: 'Ongoing' },
-                { value: 'finished', label: 'Finished' },
-                { value: 'hold', label: 'On Hold' }
+                { value: 'all', label: 'Semua status' },
+                { value: 'ongoing', label: 'Berjalan' },
+                { value: 'finished', label: 'Selesai' },
+                { value: 'hold', label: 'Ditunda' }
               ]}
               className="w-48"
             />
@@ -309,7 +309,7 @@ export default function Engagements() {
               value={filterClient}
               onChange={e => setFilterClient(e.target.value)}
               options={[
-                { value: 'all', label: 'All clients' },
+                { value: 'all', label: 'Semua client' },
                 ...(clients?.map(c => ({ value: c.id, label: c.company_name })) || [])
               ]}
               className="w-56"
@@ -318,7 +318,7 @@ export default function Engagements() {
 
           {engagements && (
             <p className="text-xs text-gray-500 mb-2 block">
-              Showing {filteredEngagements.length} of {engagements.length} entries
+              Menampilkan {filteredEngagements.length} dari {engagements.length} project
             </p>
           )}
 
@@ -326,7 +326,7 @@ export default function Engagements() {
             columns={columns} 
             rows={filteredEngagements} 
             onRowClick={(row) => handleOpenEdit(row)}
-            emptyMessage="No engagements match your filters"
+            emptyMessage="Tidak ada project yang cocok dengan filter."
           />
         </div>
       )}
@@ -335,33 +335,33 @@ export default function Engagements() {
       <Modal 
         open={isErrorModalOpen} 
         onClose={() => setIsErrorModalOpen(false)}
-        title="Add a client first"
+        title="Tambahkan client dulu"
         footer={
           <>
-            <Button variant="secondary" onClick={() => setIsErrorModalOpen(false)}>Cancel</Button>
+            <Button variant="secondary" onClick={() => setIsErrorModalOpen(false)}>Batal</Button>
             <Button onClick={() => {
               setIsErrorModalOpen(false);
               navigate('/clients');
             }}>
-              Go to Clients
+              Ke Client
             </Button>
           </>
         }
       >
-        <p className="text-sm text-gray-600">You need at least one client before creating an engagement.</p>
+        <p className="text-sm text-gray-600">Tambahkan minimal satu client sebelum membuat project.</p>
       </Modal>
 
       {/* CREATE/EDIT MODAL */}
       <Modal 
         open={isModalOpen} 
         onClose={() => setIsModalOpen(false)}
-        title={editingEngagement ? "Edit Engagement" : "Add Engagement"}
+        title={editingEngagement ? "Edit Project" : "Tambah Project"}
         maxWidthClass="max-w-lg"
         footer={
           <>
-            <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>Cancel</Button>
+            <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>Batal</Button>
             <Button type="button" onClick={handleSubmit} disabled={createEngagement.isPending || createEngagementsBulk.isPending || updateEngagement.isPending}>
-              {editingEngagement ? "Update" : "Save"}
+              {editingEngagement ? "Simpan Perubahan" : "Simpan"}
             </Button>
           </>
         }
@@ -390,18 +390,18 @@ export default function Engagements() {
             <>
               <div className="w-full">
                 <Select
-                  label="Service *"
+                  label="Layanan *"
                   required
                   value={formData.service_id}
                   onChange={e => setFormData({ ...formData, service_id: e.target.value })}
                   options={[
-                    { value: '', label: 'Select service...' },
-                    ...(services?.map(s => ({ value: s.id, label: `${s.name} (${s.service_type === 'monthly' ? 'Monthly' : 'One-time'})` })) || [])
+                    { value: '', label: 'Pilih layanan...' },
+                    ...(services?.map(s => ({ value: s.id, label: `${s.name} (${s.service_type === 'monthly' ? 'Bulanan' : 'Sekali'})` })) || [])
                   ]}
                 />
               </div>
               <CurrencyInput
-                label={selectedServiceObj?.service_type === 'one_time' ? 'Service Fee *' : 'Service Fee per Month *'}
+                label={selectedServiceObj?.service_type === 'one_time' ? 'Nominal Layanan *' : 'Nominal per Bulan *'}
                 min="0"
                 required
                 value={formData.service_fee_per_month}
@@ -410,7 +410,7 @@ export default function Engagements() {
             </>
           ) : (
             <div className="w-full">
-              <p className="block text-sm font-medium text-gray-700 mb-1.5">Service * <span className="text-red-500">(pilih satu atau beberapa)</span></p>
+              <p className="block text-sm font-medium text-gray-700 mb-1.5">Layanan * <span className="text-red-500">(pilih satu atau beberapa)</span></p>
               <div className="space-y-2 rounded-md border border-gray-300 bg-gray-50 p-3 max-h-56 overflow-y-auto">
                 {(services || []).map((service) => {
                   const checked = formData.selected_service_ids.includes(service.id);
@@ -424,12 +424,12 @@ export default function Engagements() {
                           className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                         />
                         <span>{service.name}</span>
-                        <span className="text-xs text-gray-500">({service.service_type === 'monthly' ? 'Monthly' : 'One-time'})</span>
+                        <span className="text-xs text-gray-500">({service.service_type === 'monthly' ? 'Bulanan' : 'Sekali'})</span>
                       </label>
                       {checked && (
                         <CurrencyInput
                           className="mt-2"
-                          label={service.service_type === 'one_time' ? 'Nominal service' : 'Nominal per bulan'}
+                          label={service.service_type === 'one_time' ? 'Nominal layanan' : 'Nominal per bulan'}
                           min="0"
                           required
                           value={formData.service_fees[service.id] ?? 0}
@@ -442,15 +442,15 @@ export default function Engagements() {
                     </div>
                   );
                 })}
-                {services?.length === 0 && <p className="text-sm text-gray-500">Belum ada service. Tambahkan service terlebih dahulu.</p>}
+                {services?.length === 0 && <p className="text-sm text-gray-500">Belum ada layanan. Tambahkan layanan terlebih dahulu.</p>}
               </div>
-              <p className="text-xs text-gray-500 mt-1">Setiap service yang dicentang akan dibuat sebagai satu project untuk client yang sama.</p>
+              <p className="text-xs text-gray-500 mt-1">Setiap layanan yang dicentang akan dibuat sebagai satu project untuk client yang sama.</p>
             </div>
           )}
 
           <div className="grid grid-cols-2 gap-4">
             <Input 
-              label="Start Date *" 
+              label="Tanggal Mulai *"
               type="date"
               required
               value={formData.start_date}
@@ -458,12 +458,12 @@ export default function Engagements() {
             />
             <div>
               <Input 
-                label="Finish Date" 
+                label="Tanggal Selesai"
                 type="date"
                 value={formData.finish_date}
                 onChange={e => setFormData({...formData, finish_date: e.target.value})}
               />
-              <p className="text-xs text-gray-500 mt-1">Leave empty if ongoing</p>
+              <p className="text-xs text-gray-500 mt-1">Kosongkan jika masih berjalan.</p>
             </div>
           </div>
 
@@ -474,33 +474,33 @@ export default function Engagements() {
               value={formData.status}
               onChange={e => setFormData({...formData, status: e.target.value})}
               options={[
-                { value: 'ongoing', label: 'Ongoing' },
-                { value: 'finished', label: 'Finished' },
-                { value: 'hold', label: 'On Hold' }
+                { value: 'ongoing', label: 'Berjalan' },
+                { value: 'finished', label: 'Selesai' },
+                { value: 'hold', label: 'Ditunda' }
               ]}
             />
           </div>
 
           <div className="w-full">
             <Input 
-              label="QTN URL" 
+              label="Link Penawaran (QTN)"
               type="url"
               placeholder="https://docs.google.com/..."
               value={formData.qtn_url}
               onChange={e => setFormData({...formData, qtn_url: e.target.value})}
             />
-            <p className="text-xs text-gray-500 mt-1">Link to Google Docs quotation</p>
+            <p className="text-xs text-gray-500 mt-1">Link dokumen penawaran, jika ada.</p>
           </div>
 
           <div className="w-full">
             <Input 
-              label="Report URL" 
+              label="Link Laporan"
               type="url"
               placeholder="https://..."
               value={formData.report_url}
               onChange={e => setFormData({...formData, report_url: e.target.value})}
             />
-            <p className="text-xs text-gray-500 mt-1">Link to final report (if applicable)</p>
+            <p className="text-xs text-gray-500 mt-1">Link laporan akhir, jika ada.</p>
           </div>
 
           <div className="w-full">
@@ -517,31 +517,31 @@ export default function Engagements() {
       <Modal 
         open={!!deleteId} 
         onClose={() => setDeleteId(null)}
-        title="Confirm Delete"
+        title="Hapus Project"
         footer={
           <>
-            <Button variant="secondary" onClick={() => setDeleteId(null)}>Cancel</Button>
+            <Button variant="secondary" onClick={() => setDeleteId(null)}>Batal</Button>
             <Button variant="danger" onClick={confirmDelete} disabled={deleteEngagement.isPending}>
-              Delete Engagement
+              Hapus Project
             </Button>
           </>
         }
       >
         <p className="text-sm text-gray-600">
-          Delete engagement {
+          Hapus project {
             (() => {
               const eng = engagements?.find(e => e.id === deleteId);
               if (!eng) return '';
               return <strong>{eng.client?.company_name} - {eng.service?.name}</strong>;
             })()
-          }? All related invoices and freelancer fees will also be deleted (cascade). This cannot be undone.
+          }? Invoice dan fee freelancer terkait juga akan terhapus. Tindakan ini tidak bisa dibatalkan.
         </p>
       </Modal>
       
       {/* Toast */}
       {successToast && (
         <div className="fixed bottom-4 right-4 bg-gray-950 text-white px-4 py-3 rounded-md shadow-lg text-sm font-medium animate-bounce z-50">
-          Engagement saved successfully!
+          Project berhasil disimpan.
         </div>
       )}
     </>

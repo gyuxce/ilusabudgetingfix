@@ -780,7 +780,7 @@ export default function Invoices() {
   const columns = [
     { key: 'invoice_number', label: 'Invoice #', render: (row) => row.invoice_number ? <span className="font-medium text-gray-900">{row.invoice_number}</span> : <span className="text-gray-400">—</span> },
     { key: 'client', label: 'Client', render: (row) => <span className="font-medium text-gray-900">{row.engagement?.client?.company_name || '—'}</span> },
-    { key: 'service', label: 'Service', render: (row) => <span className="text-sm text-gray-600">{row.engagement?.service?.name || '—'}</span> },
+    { key: 'service', label: 'Layanan', render: (row) => <span className="text-sm text-gray-600">{row.engagement?.service?.name || '—'}</span> },
     { key: 'billing_month', label: 'Bulan Tagihan', render: (row) => formatPeriod(row.effective_billing_month || row.billing_month) },
     { key: 'period', label: 'Periode Jasa', render: (row) => formatPeriod(row.period_month) },
     { key: 'amount', label: 'Nilai', render: (row) => <span className="font-medium">Rp {formatCurrency(row.amount)}</span> },
@@ -1005,7 +1005,7 @@ export default function Invoices() {
         <EmptyState 
           icon={FileText} 
           title="No invoices yet" 
-          description="Create invoices for your engagements to track payments" 
+          description="Buat invoice dari project dan pantau pembayarannya."
           action={<Button onClick={handleOpenAdd}>New Invoice</Button>}
         />
       ) : (
@@ -1070,7 +1070,7 @@ export default function Invoices() {
           {editingInvoice && (
           <div>
             <Select 
-              label="Engagement *" 
+              label="Project *"
               required
               value={formData.engagement_id}
               onChange={handleEngagementChange}
@@ -1079,7 +1079,7 @@ export default function Invoices() {
                 ...(engagements?.map(e => ({ value: e.id, label: `${e.client?.company_name} — ${e.service?.name}` })) || [])
               ]}
             />
-            <p className="text-xs text-gray-500 mt-1">Pick the engagement this invoice is for</p>
+            <p className="text-xs text-gray-500 mt-1">Pilih project yang ditagihkan.</p>
           </div>
           )}
 
