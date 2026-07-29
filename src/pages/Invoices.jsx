@@ -599,25 +599,25 @@ export default function Invoices() {
              .meta-panel { width: 76mm; background: #fff; }
              .brand-row { display: flex; align-items: center; gap: 11px; }
              .logo-image, .logo-fallback { width: 58px; height: 58px; border-radius: 8px; object-fit: contain; }
-             .logo-fallback { display: grid; place-items: center; background: #111827; color: #fff; font-size: 15px; font-weight: 800; }
+             .logo-fallback { display: grid; place-items: center; background: #111827; color: #fff; font-size: 18px; font-weight: 800; }
              .client-logo { width: 88px; height: 58px; border-radius: 7px; object-fit: contain; float: right; margin-left: 12px; }
-             .brand { font-size: 25px; font-weight: 800; letter-spacing: -0.02em; }
+             .brand { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; }
             .muted { color: #6b7280; }
              .light { color: #6b7280; }
-            .small { font-size: 10.5px; line-height: 1.45; }
-            p { margin: 5px 0 0; }
+            .small { font-size: 12px; line-height: 1.5; }
+            p { margin: 6px 0 0; }
             strong { color: #111827; }
             .eyebrow {
               margin: 0 0 7px;
-              font-size: 9px;
+              font-size: 10px;
               font-weight: 700;
               letter-spacing: 0.18em;
               text-transform: uppercase;
             }
-            h1 { margin: 0; font-size: 30px; letter-spacing: -0.04em; }
-            h2 { margin: 0 0 6px; font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: #4b5563; }
+            h1 { margin: 0; font-size: 34px; letter-spacing: -0.04em; }
+            h2 { margin: 0 0 7px; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: #4b5563; }
             .meta { text-align: left; }
-            .meta-row { display: grid; grid-template-columns: 74px 1fr; gap: 10px; margin-top: 6px; font-size: 11px; }
+            .meta-row { display: grid; grid-template-columns: 82px 1fr; gap: 10px; margin-top: 7px; font-size: 12px; }
             .meta-row span:first-child { color: #6b7280; }
              .status {
                display: inline-flex;
@@ -625,7 +625,7 @@ export default function Invoices() {
                border: 1px solid #d1d5db;
                border-radius: 999px;
                padding: 4px 9px;
-               font-size: 9px;
+               font-size: 10px;
                font-weight: 800;
                letter-spacing: 0.12em;
                color: #374151;
@@ -640,20 +640,20 @@ export default function Invoices() {
             .balance strong {
               display: block;
               margin-top: 4px;
-              font-size: 22px;
+              font-size: 25px;
               letter-spacing: -0.03em;
             }
-            table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 11px; font-size: 12px; }
             th {
               border-top: 1px solid #111827;
               border-bottom: 1px solid #111827;
-              padding: 9px 8px;
+              padding: 10px 8px;
               text-align: left;
-              font-size: 9px;
+              font-size: 10px;
               letter-spacing: 0.14em;
               text-transform: uppercase;
             }
-            td { border-bottom: 1px solid #e5e7eb; padding: 10px 8px; vertical-align: top; }
+            td { border-bottom: 1px solid #e5e7eb; padding: 11px 8px; vertical-align: top; }
             .right { text-align: right; }
             .total {
               margin-left: auto;
@@ -663,7 +663,7 @@ export default function Invoices() {
               border-radius: 8px;
               overflow: hidden;
             }
-            .total-row { display: flex; justify-content: space-between; padding: 9px 12px; font-size: 11px; border-bottom: 1px solid #e5e7eb; }
+            .total-row { display: flex; justify-content: space-between; padding: 10px 12px; font-size: 12px; border-bottom: 1px solid #e5e7eb; }
             .total-row:last-child { border-bottom: 0; background: #f3f4f6; font-weight: 800; }
             .notes-grid {
               display: grid;
