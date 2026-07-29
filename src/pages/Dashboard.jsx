@@ -30,7 +30,7 @@ import {
 import { useInvoices } from '../lib/queries/invoices';
 import { useFreelancerFees } from '../lib/queries/freelancer_fees';
 import { useEngagements } from '../lib/queries/engagements';
-import { useClientExpenses } from '../lib/queries/client_advances';
+import { useClientExpenses, useCompanyExpenses } from '../lib/queries/client_advances';
 import { useAllInvoicePayments } from '../lib/queries/invoice_payments';
 import { currentMonthKey, formatPeriod, lastNMonths } from '../lib/utils';
 import { PageHeader } from '../components/ui/PageHeader';
@@ -78,6 +78,7 @@ export default function Dashboard() {
   const { data: allFees, isLoading: feesLoading } = useFreelancerFees();
   const { data: allEngagements, isLoading: engLoading } = useEngagements();
   const { data: allAdvances, isLoading: advancesLoading } = useClientExpenses();
+  const { data: allCompanyExpenses, isLoading: companyExpensesLoading } = useCompanyExpenses();
   const { data: allPayments, isLoading: paymentsLoading } = useAllInvoicePayments();
   const reportPeriod = periodFilter === 'all' ? currentMonthKey() : periodFilter;
 
@@ -114,6 +115,10 @@ export default function Dashboard() {
   const cashInAdvances = useMemo(() => {
     return (allAdvances || []).filter((advance) => advance.funding_source === 'outside_budget' && advance.status === 'reimbursed' && isInPeriod(advance.reimbursed_date || advance.spend_date, periodFilter));
   }, [allAdvances, periodFilter]);
+
+  const cashOutCompanyExpenses = useMemo(() => {
+    return (allCompanyExpenses || []).filter((expense) => isInPeriod(expense.spend_date, periodFilter));
+  }, [allCompanyExpenses, periodFilter]);
 
   const metrics = useMemo(() => {
     let revenueIssued = 0;
@@ -169,6 +174,10 @@ export default function Dashboard() {
       cashIn += advance.amount || 0;
     });
 
+    cashOutCompanyExpenses.forEach((expense) => {
+      cashOut += expense.amount || 0;
+    });
+
     const activeEngagements = allEngagements?.filter((e) => e.status === 'ongoing') || [];
     const distinctClientsSet = new Set(activeEngagements.map((e) => e.client_id));
     const topOverdue = allOverdueInvoices
@@ -202,7 +211,7 @@ export default function Dashboard() {
       topPendingFees,
       netCashflow: { cashIn, cashOut, net: cashIn - cashOut },
     };
-  }, [allInvoices, allFees, allEngagements, allAdvances, filteredInvoices, filteredFees, filteredAdvances, cashPayments, cashPaidFees, cashOutAdvances, cashInAdvances]);
+  }, [allInvoices, allFees, allEngagements, allAdvances, allCompanyExpenses, filteredInvoices, filteredFees, filteredAdvances, cashPayments, cashPaidFees, cashOutAdvances, cashInAdvances, cashOutCompanyExpenses]);
 
   const monthlyData = useMemo(() => {
     const months = lastNMonths(6).reverse();
@@ -212,17 +221,19 @@ export default function Dashboard() {
       const fees = allFees?.filter((fee) => fee.status === 'paid' && monthOf(fee.paid_date || `${fee.period_month}-01`) === month.value) || [];
       const advancesOut = allAdvances?.filter((advance) => monthOf(advance.spend_date) === month.value) || [];
       const advancesIn = allAdvances?.filter((advance) => advance.funding_source === 'outside_budget' && advance.status === 'reimbursed' && monthOf(advance.reimbursed_date || advance.spend_date) === month.value) || [];
+      const companyExpenses = allCompanyExpenses?.filter((expense) => monthOf(expense.spend_date) === month.value) || [];
       const advanceOut = advancesOut.reduce((sum, advance) => sum + (advance.amount || 0), 0);
       const advanceIn = advancesIn.reduce((sum, advance) => sum + (advance.amount || 0), 0);
+      const companyOut = companyExpenses.reduce((sum, expense) => sum + (expense.amount || 0), 0);
       return {
         month: month.label.split(' ')[0],
         revenue: payments.reduce((sum, payment) => sum + (payment.amount || 0), 0) + advanceIn,
         issued: invoices.reduce((sum, inv) => sum + (inv.amount || 0), 0),
-        fees: fees.reduce((sum, fee) => sum + (fee.calculated_fee || 0), 0) + advanceOut,
-        profit: payments.reduce((sum, payment) => sum + (payment.amount || 0), 0) + advanceIn - fees.reduce((sum, fee) => sum + (fee.calculated_fee || 0), 0) - advanceOut,
+        fees: fees.reduce((sum, fee) => sum + (fee.calculated_fee || 0), 0) + advanceOut + companyOut,
+        profit: payments.reduce((sum, payment) => sum + (payment.amount || 0), 0) + advanceIn - fees.reduce((sum, fee) => sum + (fee.calculated_fee || 0), 0) - advanceOut - companyOut,
       };
     });
-  }, [allInvoices, allPayments, allFees, allAdvances]);
+  }, [allInvoices, allPayments, allFees, allAdvances, allCompanyExpenses]);
 
   const ownerInsights = useMemo(() => {
     const invoices = allInvoices || [];
@@ -403,7 +414,7 @@ export default function Dashboard() {
       .filter((status) => status.value > 0);
   }, [allInvoices]);
 
-  if (invoicesLoading || feesLoading || engLoading || advancesLoading || paymentsLoading) {
+  if (invoicesLoading || feesLoading || engLoading || advancesLoading || paymentsLoading || companyExpensesLoading) {
     return (
       <div className="animate-pulse space-y-5">
         <div className="h-24 rounded-xl bg-gray-200" />
