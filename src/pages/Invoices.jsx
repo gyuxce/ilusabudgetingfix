@@ -693,10 +693,10 @@ export default function Invoices() {
     { key: 'invoice_number', label: 'Invoice #', render: (row) => row.invoice_number ? <span className="font-medium text-gray-900">{row.invoice_number}</span> : <span className="text-gray-400">—</span> },
     { key: 'client', label: 'Client', render: (row) => <span className="font-medium text-gray-900">{row.engagement?.client?.company_name || '—'}</span> },
     { key: 'service', label: 'Service', render: (row) => <span className="text-sm text-gray-600">{row.engagement?.service?.name || '—'}</span> },
-    { key: 'billing_month', label: 'Billing', render: (row) => formatPeriod(row.effective_billing_month || row.billing_month) },
-    { key: 'period', label: 'Service Period', render: (row) => formatPeriod(row.period_month) },
-    { key: 'amount', label: 'Amount', render: (row) => <span className="font-medium">Rp {formatCurrency(row.amount)}</span> },
-    { key: 'paid_total', label: 'Paid / Total', render: (row) => {
+    { key: 'billing_month', label: 'Bulan Tagihan', render: (row) => formatPeriod(row.effective_billing_month || row.billing_month) },
+    { key: 'period', label: 'Periode Jasa', render: (row) => formatPeriod(row.period_month) },
+    { key: 'amount', label: 'Nilai', render: (row) => <span className="font-medium">Rp {formatCurrency(row.amount)}</span> },
+    { key: 'paid_total', label: 'Dibayar / Total', render: (row) => {
         const totalPaid = row.total_paid || 0;
         const amount = row.amount || 0;
         if (row.computed_status === 'paid') {
@@ -706,21 +706,21 @@ export default function Invoices() {
         }
         return <span className="text-gray-500">Rp 0 / Rp {formatCurrency(amount)}</span>;
     }},
-    { key: 'due_date', label: 'Due Date', render: (row) => {
+    { key: 'due_date', label: 'Jatuh Tempo', render: (row) => {
         if (!row.due_date) return '—';
         const isOverdue = row.computed_status === 'overdue';
         return <span className={isOverdue ? "text-red-600 font-medium" : ""}>{format(new Date(row.due_date), 'dd MMM yyyy')}</span>;
     }},
     { key: 'status', label: 'Status', render: (row) => {
       const status = row.computed_status;
-      if (status === 'paid') return <Badge variant="success">Paid</Badge>;
+       if (status === 'paid') return <Badge variant="success">Lunas</Badge>;
       if (status === 'partial') {
         const percent = Math.round(((row.total_paid || 0) / row.amount) * 100) || 0;
-        return <Badge variant="warning">Partial ({percent}%)</Badge>;
+         return <Badge variant="warning">Sebagian ({percent}%)</Badge>;
       }
-      if (status === 'overdue') return <Badge variant="danger">Overdue</Badge>;
-      if (status === 'approved') return <Badge variant="neutral">Approved</Badge>;
-      if (status === 'sent') return <Badge variant="neutral">Sent</Badge>;
+       if (status === 'overdue') return <Badge variant="danger">Terlambat</Badge>;
+       if (status === 'approved') return <Badge variant="neutral">Disetujui</Badge>;
+       if (status === 'sent') return <Badge variant="neutral">Dikirim</Badge>;
       if (status === 'draft') return <Badge variant="neutral">Draft</Badge>;
       return <Badge variant="neutral">{status}</Badge>;
     }},
@@ -775,17 +775,17 @@ export default function Invoices() {
   return (
     <>
       <PageHeader 
-        title="Invoices" 
-        description="Track money coming in from clients"
+        title="Invoice"
+        description="Invoice adalah tagihan. Uang masuk baru tercatat setelah pembayaran diterima."
         action={
           <div className="flex gap-2">
             <Button variant="secondary" onClick={handleOpenBulk}>
               <Calendar size={16} className="mr-1.5" />
-              Bulk Generate
+              Buat Massal
             </Button>
             <Button onClick={handleOpenAdd}>
               <Plus size={16} className="mr-1.5" />
-              New Invoice
+              Invoice Baru
             </Button>
           </div>
         }
@@ -794,7 +794,7 @@ export default function Invoices() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <Card className="!p-4">
           <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">
-            Total {(!filterBillingMonth || filterBillingMonth === 'all') ? '(All Time)' : `- Billing ${formatPeriod(filterBillingMonth)}`}
+            Total Tagihan {(!filterBillingMonth || filterBillingMonth === 'all') ? '(Semua)' : `- ${formatPeriod(filterBillingMonth)}`}
           </p>
           <div className="text-2xl font-semibold tracking-tight text-gray-950 leading-tight">
             <AnimatedNumber value={cardTotals.total} prefix="Rp " />
@@ -803,7 +803,7 @@ export default function Invoices() {
         </Card>
         <Card className="!p-4">
           <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">
-            Paid {(!filterBillingMonth || filterBillingMonth === 'all') ? '(All Time)' : `- Billing ${formatPeriod(filterBillingMonth)}`}
+            Terbayar di Invoice {(!filterBillingMonth || filterBillingMonth === 'all') ? '(Semua)' : `- ${formatPeriod(filterBillingMonth)}`}
           </p>
           <div className="text-2xl font-semibold tracking-tight text-emerald-600 leading-tight">
             <AnimatedNumber value={cardTotals.paid} prefix="Rp " />
@@ -812,12 +812,12 @@ export default function Invoices() {
         </Card>
         <Card className="!p-4">
           <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">
-            Outstanding {(!filterBillingMonth || filterBillingMonth === 'all') ? '(All Time)' : `- Billing ${formatPeriod(filterBillingMonth)}`}
+            Belum Diterima {(!filterBillingMonth || filterBillingMonth === 'all') ? '(Semua)' : `- ${formatPeriod(filterBillingMonth)}`}
           </p>
           <div className={`text-2xl font-semibold tracking-tight leading-tight ${cardTotals.outstanding > 0 ? 'text-amber-600' : 'text-gray-400'}`}>
             <AnimatedNumber value={cardTotals.outstanding} prefix="Rp " />
           </div>
-          <p className="text-xs text-gray-500 mt-1">{cardTotals.outstandingCount} unpaid</p>
+          <p className="text-xs text-gray-500 mt-1">{cardTotals.outstandingCount} belum lunas</p>
         </Card>
       </div>
 
@@ -849,7 +849,7 @@ export default function Invoices() {
         <div className="max-w-xs w-full relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
           <Input 
-            placeholder="Search invoice # or client..." 
+            placeholder="Cari nomor invoice atau client..."
             value={search}
             onChange={e => setSearch(e.target.value)}
             style={{ paddingLeft: '2.5rem' }}
@@ -859,7 +859,7 @@ export default function Invoices() {
           value={filterBillingMonth}
           onChange={e => setFilterBillingMonth(e.target.value)}
           options={[
-            { value: 'all', label: 'All billing months' },
+            { value: 'all', label: 'Semua bulan tagihan' },
             ...lastNMonths(12)
           ]}
           className="w-full sm:w-52"
@@ -868,7 +868,7 @@ export default function Invoices() {
           value={filterPeriod}
           onChange={e => setFilterPeriod(e.target.value)}
           options={[
-            { value: 'all', label: 'All service periods' },
+            { value: 'all', label: 'Semua periode jasa' },
             ...lastNMonths(12)
           ]}
           className="w-full sm:w-52"
@@ -877,13 +877,13 @@ export default function Invoices() {
           value={filterStatus}
           onChange={e => setFilterStatus(e.target.value)}
           options={[
-            { value: 'all', label: 'All statuses' },
+            { value: 'all', label: 'Semua status' },
             { value: 'draft', label: 'Draft' },
-            { value: 'approved', label: 'Approved' },
-            { value: 'sent', label: 'Sent' },
-            { value: 'partial', label: 'Partial' },
-            { value: 'paid', label: 'Paid' },
-            { value: 'overdue', label: 'Overdue' }
+            { value: 'approved', label: 'Disetujui' },
+            { value: 'sent', label: 'Dikirim' },
+            { value: 'partial', label: 'Sebagian' },
+            { value: 'paid', label: 'Lunas' },
+            { value: 'overdue', label: 'Terlambat' }
           ]}
           className="w-full sm:w-40"
         />
@@ -891,7 +891,7 @@ export default function Invoices() {
           value={filterClient}
           onChange={e => setFilterClient(e.target.value)}
           options={[
-            { value: 'all', label: 'All clients' },
+            { value: 'all', label: 'Semua client' },
             ...(clients?.map(c => ({ value: c.id, label: c.company_name })) || [])
           ]}
           className="w-full sm:w-56"
@@ -900,7 +900,7 @@ export default function Invoices() {
 
       {invoices && (
         <p className="text-xs text-gray-500 mb-4 block">
-          Showing {filteredInvoices.length} of {invoices.length} entries
+          Menampilkan {filteredInvoices.length} dari {invoices.length} invoice
         </p>
       )}
 
@@ -966,6 +966,10 @@ export default function Invoices() {
             </div>
           )}
 
+          <div className="rounded-md border border-blue-100 bg-blue-50 p-3 text-sm text-blue-800">
+            Invoice hanya mencatat tagihan. Uang masuk dicatat terpisah lewat tombol pembayaran setelah client membayar.
+          </div>
+
           <div>
             <Select 
               label="Engagement *" 
@@ -981,7 +985,7 @@ export default function Invoices() {
           </div>
 
           <Input
-            label="Billing Month *"
+            label="Bulan Tagihan *"
             type="month"
             required
             value={formData.billing_month}
@@ -991,18 +995,18 @@ export default function Invoices() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Input 
-                label={selectedEngagementObj?.service?.service_type === 'monthly' ? "Service Period *" : "Service Period"}
+                label={selectedEngagementObj?.service?.service_type === 'monthly' ? "Periode Jasa *" : "Periode Jasa"}
                 type="month"
                 value={formData.period_month}
                 onChange={e => setFormData({...formData, period_month: e.target.value})}
               />
               <p className="text-xs text-gray-500 mt-1">
-                {selectedEngagementObj?.service?.service_type === 'monthly' ? "The month being billed, e.g. May 2026 billed in June" : "Leave empty for one-time"}
+                {selectedEngagementObj?.service?.service_type === 'monthly' ? "Contoh: jasa Mei ditagihkan pada Juni." : "Boleh kosong untuk pekerjaan satu kali."}
               </p>
             </div>
             <div>
               <Input 
-                label="Invoice Number" 
+                label="Nomor Invoice"
                 placeholder="INV-2026-001"
                 value={formData.invoice_number}
                 onChange={e => setFormData({...formData, invoice_number: e.target.value})}
@@ -1012,7 +1016,7 @@ export default function Invoices() {
 
           <div>
             <Input 
-              label="Amount *" 
+              label="Nilai Tagihan *"
               type="number"
               min="0"
               required
@@ -1027,14 +1031,14 @@ export default function Invoices() {
 
           <div className="grid grid-cols-2 gap-4">
             <Input 
-              label="Issue Date *" 
+              label="Tanggal Invoice *"
               type="date"
               required
               value={formData.issue_date}
               onChange={e => setFormData({...formData, issue_date: e.target.value})}
             />
             <Input 
-              label="Due Date *" 
+              label="Jatuh Tempo *"
               type="date"
               required
               value={formData.due_date}
@@ -1045,22 +1049,22 @@ export default function Invoices() {
           <div className="grid gap-4 grid-cols-1">
             <div>
               <Select 
-                label="Status *" 
+                label="Status Invoice *"
                 required
                 value={formData.status}
                 onChange={e => setFormData({...formData, status: e.target.value})}
                 options={[
                   { value: 'draft', label: 'Draft' },
-                  { value: 'approved', label: 'Approved' },
-                  { value: 'sent', label: 'Sent' }
+                  { value: 'approved', label: 'Disetujui' },
+                  { value: 'sent', label: 'Dikirim' }
                 ]}
               />
-              <p className="text-xs text-gray-500 mt-1">To mark as paid, use 'Record Payment' button after creating the invoice.</p>
+              <p className="text-xs text-gray-500 mt-1">Untuk mencatat uang masuk, gunakan tombol "Catat Pembayaran" setelah client membayar.</p>
             </div>
           </div>
 
           <Textarea 
-            label="Notes" 
+            label="Catatan"
             value={formData.notes}
             onChange={e => setFormData({...formData, notes: e.target.value})}
           />
@@ -1071,18 +1075,18 @@ export default function Invoices() {
       <Modal 
         open={isBulkModalOpen} 
         onClose={() => setIsBulkModalOpen(false)}
-        title="Bulk Generate Invoices"
+        title="Buat Invoice Massal"
         maxWidthClass="max-w-md"
         footer={
           <>
-            <Button type="button" variant="secondary" onClick={() => setIsBulkModalOpen(false)}>Cancel</Button>
+            <Button type="button" variant="secondary" onClick={() => setIsBulkModalOpen(false)}>Batal</Button>
             <Button type="button" onClick={handleBulkSubmit} disabled={createInvoicesBulk.isPending || bulkMonths.length === 0}>
-              Generate {bulkMonths.length} {bulkMonths.length === 1 ? 'Invoice' : 'Invoices'}
+              Buat {bulkMonths.length} Invoice
             </Button>
           </>
         }
       >
-        <p className="text-sm text-gray-500 mb-4">Generate invoices for service periods that are billed in a later month. Example: billing month June, service period May.</p>
+        <p className="text-sm text-gray-500 mb-4">Buat beberapa invoice sekaligus. Contoh: jasa Mei ditagihkan pada Juni. Setelah itu bulan tagihan maju otomatis setiap periode.</p>
         
         <form className="space-y-4" onSubmit={handleBulkSubmit}>
           {bulkFormError && (
@@ -1093,40 +1097,42 @@ export default function Invoices() {
 
           <div>
             <Select 
-              label="Engagement *" 
+              label="Project *"
               required
               value={bulkFormData.engagement_id}
               onChange={handleBulkEngagementChange}
               options={[
-                { value: '', label: 'Select monthly engagement...' },
+                { value: '', label: 'Pilih project bulanan...' },
                 ...monthlyEngagements.map(e => ({ value: e.id, label: `${e.client?.company_name} — ${e.service?.name}` }))
               ]}
             />
             {selectedBulkEngagementObj && (
               <p className="text-xs text-gray-500 mt-1">
-                Default amount: Rp {formatCurrency(selectedBulkEngagementObj.service_fee_per_month)} (from engagement fee)
+                Nilai awal: Rp {formatCurrency(selectedBulkEngagementObj.service_fee_per_month)} dari nilai project.
               </p>
             )}
           </div>
 
           <Input
-            label="Billing Month *"
+            label="Bulan Tagihan Awal *"
             type="month"
             required
             value={bulkFormData.billing_month}
             onChange={e => setBulkFormData({...bulkFormData, billing_month: e.target.value})}
           />
 
+          <p className="-mt-2 text-xs text-gray-500">Invoice berikutnya otomatis dibuat pada bulan setelah bulan ini.</p>
+
           <div className="grid grid-cols-2 gap-4">
             <Input 
-              label="Start Service Period *" 
+              label="Periode Jasa Awal *"
               type="month"
               required
               value={bulkFormData.start_period}
               onChange={e => setBulkFormData({...bulkFormData, start_period: e.target.value})}
             />
             <Input 
-              label="End Service Period *" 
+              label="Periode Jasa Akhir *"
               type="month"
               required
               value={bulkFormData.end_period}
@@ -1136,7 +1142,7 @@ export default function Invoices() {
 
           <div className="grid grid-cols-2 gap-4">
             <Input 
-              label="Amount per Invoice *" 
+              label="Nilai per Invoice *"
               type="number"
               min="0"
               required
@@ -1145,7 +1151,7 @@ export default function Invoices() {
             />
             <div>
               <Input 
-                label="Due Day of Month *" 
+                label="Tanggal Jatuh Tempo *"
                 type="number"
                 min="1"
                 max="28"
@@ -1153,41 +1159,41 @@ export default function Invoices() {
                 value={bulkFormData.due_day}
                 onChange={e => setBulkFormData({...bulkFormData, due_day: e.target.value})}
               />
-              <p className="text-xs text-gray-500 mt-1">Due day inside billing month</p>
+              <p className="text-xs text-gray-500 mt-1">Tanggal ini berlaku di bulan tagihan.</p>
             </div>
           </div>
 
           <div>
             <Select 
-              label="Status" 
+               label="Status Invoice"
               required
               value={bulkFormData.status}
               onChange={e => setBulkFormData({...bulkFormData, status: e.target.value})}
               options={[
                 { value: 'draft', label: 'Draft' },
-                { value: 'approved', label: 'Approved' },
-                { value: 'sent', label: 'Sent' }
+                 { value: 'approved', label: 'Disetujui' },
+                 { value: 'sent', label: 'Dikirim' }
               ]}
             />
           </div>
 
           {bulkMonths.length > 0 && selectedBulkEngagementObj && (
             <div className="mt-6 border-t border-gray-200 pt-4">
-              <h4 className="text-sm font-medium text-gray-900 mb-2">Will generate {bulkMonths.length} invoices:</h4>
+              <h4 className="text-sm font-medium text-gray-900 mb-2">Preview {bulkMonths.length} invoice:</h4>
               <ul className="text-sm text-gray-600 space-y-1 max-h-32 overflow-y-auto bg-gray-50 p-2 rounded border border-gray-100">
                 {bulkMonths.map((m, index) => {
                   const billingMonth = addMonthsToPeriodKey(bulkFormData.billing_month, index);
                   const dueDate = getBillingDate(billingMonth, parseInt(bulkFormData.due_day, 10) || 15);
                   return (
                     <li key={m}>
-                      Service {formatPeriod(m)} - Rp {formatCurrency(parseInt(bulkFormData.amount, 10) || 0)} - billing {formatPeriod(billingMonth)} - due {format(new Date(dueDate), 'MMM dd, yyyy')}
+                      Jasa {formatPeriod(m)} - Rp {formatCurrency(parseInt(bulkFormData.amount, 10) || 0)} - tagihan {formatPeriod(billingMonth)} - jatuh tempo {format(new Date(dueDate), 'dd MMM yyyy')}
                     </li>
                   );
                 })}
               </ul>
               {bulkMonths.length > 12 && (
                 <p className="text-xs font-medium text-amber-600 mt-2">
-                  Generating more than 12 invoices at once. Are you sure?
+                   Kamu akan membuat lebih dari 12 invoice sekaligus.
                 </p>
               )}
             </div>

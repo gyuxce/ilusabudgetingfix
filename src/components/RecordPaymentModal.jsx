@@ -44,13 +44,13 @@ export function RecordPaymentModal({ open, onClose, invoice, onSuccess }) {
 
     const paymentAmt = parseInt(formData.amount, 10);
     if (!paymentAmt || paymentAmt <= 0) {
-      setFormError('Amount must be greater than 0.');
+      setFormError('Nominal pembayaran harus lebih dari nol.');
       return;
     }
 
     if (paymentAmt > balance) {
-      const confirmOver = confirm(`Warning: Payment amount (Rp ${formatCurrency(paymentAmt)}) exceeds the remaining balance (Rp ${formatCurrency(balance)}). Continue anyway?`);
-      if (!confirmOver) return;
+      setFormError(`Nominal pembayaran melebihi sisa tagihan Rp ${formatCurrency(balance)}.`);
+      return;
     }
 
     try {
@@ -71,12 +71,12 @@ export function RecordPaymentModal({ open, onClose, invoice, onSuccess }) {
     <Modal
       open={open}
       onClose={onClose}
-      title="Record Payment"
+      title="Catat Pembayaran"
       maxWidthClass="max-w-md"
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSubmit} disabled={createPayment.isPending}>Record Payment</Button>
+          <Button variant="secondary" onClick={onClose}>Batal</Button>
+          <Button onClick={handleSubmit} disabled={createPayment.isPending}>Simpan Pembayaran</Button>
         </>
       }
     >
@@ -110,7 +110,7 @@ export function RecordPaymentModal({ open, onClose, invoice, onSuccess }) {
 
         <div>
            <Input 
-             label="Amount *" 
+             label="Nominal *"
              type="number" 
              required 
              min="1"
@@ -123,7 +123,7 @@ export function RecordPaymentModal({ open, onClose, invoice, onSuccess }) {
         </div>
 
         <Input 
-          label="Payment Date *" 
+          label="Tanggal Pembayaran *"
           type="date" 
           required 
           value={formData.payment_date} 
@@ -131,15 +131,15 @@ export function RecordPaymentModal({ open, onClose, invoice, onSuccess }) {
         />
 
         <Input 
-          label="Payment Method" 
-          placeholder="Bank Transfer / Cash / etc" 
+          label="Metode Pembayaran"
+          placeholder="Transfer bank / cash"
           value={formData.payment_method} 
           onChange={e => setFormData({...formData, payment_method: e.target.value})} 
         />
 
         <Textarea 
-          label="Notes" 
-          placeholder="e.g. DP, Pelunasan, via Mandiri" 
+          label="Catatan"
+          placeholder="Contoh: DP, pelunasan, via Mandiri"
           value={formData.notes} 
           onChange={e => setFormData({...formData, notes: e.target.value})} 
         />

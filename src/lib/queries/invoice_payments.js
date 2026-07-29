@@ -13,10 +13,23 @@ export function useInvoicePayments(invoiceId) {
         .eq('invoice_id', invoiceId)
         .order('payment_date', { ascending: false });
       if (error) throw error;
-      await logAudit('payment.recorded', 'invoice', data.invoice_id, { payment_id: data.id, amount: data.amount });
       return data;
     },
     enabled: !!invoiceId,
+  });
+}
+
+export function useAllInvoicePayments() {
+  return useQuery({
+    queryKey: ['invoice_payments_all'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('invoice_payments')
+        .select('id, invoice_id, amount, payment_date, payment_method, notes')
+        .order('payment_date', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
   });
 }
 
@@ -29,10 +42,16 @@ export function useCreatePayment() {
         .insert(payment)
         .select().single();
       if (error) throw error;
+      await logAudit('payment.recorded', 'invoice', payment.invoice_id, {
+        payment_id: data.id,
+        amount: data.amount,
+        payment_date: data.payment_date,
+      });
       return data;
     },
     onSuccess: (_, variables) => {
       qc.invalidateQueries({ queryKey: ['invoices'] }); // refresh main list
+      qc.invalidateQueries({ queryKey: ['invoice_payments_all'] });
       qc.invalidateQueries({ queryKey: ['invoice_payments', variables.invoice_id] });
     }
   });
@@ -49,6 +68,7 @@ export function useDeletePayment() {
     },
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ['invoices'] });
+      qc.invalidateQueries({ queryKey: ['invoice_payments_all'] });
       qc.invalidateQueries({ queryKey: ['invoice_payments', data.invoice_id] });
     }
   });
