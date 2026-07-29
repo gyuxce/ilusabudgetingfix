@@ -30,7 +30,7 @@ import {
 import { useInvoices } from '../lib/queries/invoices';
 import { useFreelancerFees } from '../lib/queries/freelancer_fees';
 import { useEngagements } from '../lib/queries/engagements';
-import { useClientAdvances } from '../lib/queries/client_advances';
+import { useClientExpenses } from '../lib/queries/client_advances';
 import { useAllInvoicePayments } from '../lib/queries/invoice_payments';
 import { currentMonthKey, formatPeriod, lastNMonths } from '../lib/utils';
 import { PageHeader } from '../components/ui/PageHeader';
@@ -77,7 +77,7 @@ export default function Dashboard() {
   const { data: allInvoices, isLoading: invoicesLoading } = useInvoices();
   const { data: allFees, isLoading: feesLoading } = useFreelancerFees();
   const { data: allEngagements, isLoading: engLoading } = useEngagements();
-  const { data: allAdvances, isLoading: advancesLoading } = useClientAdvances();
+  const { data: allAdvances, isLoading: advancesLoading } = useClientExpenses();
   const { data: allPayments, isLoading: paymentsLoading } = useAllInvoicePayments();
   const reportPeriod = periodFilter === 'all' ? currentMonthKey() : periodFilter;
 
@@ -112,7 +112,7 @@ export default function Dashboard() {
   }, [allAdvances, periodFilter]);
 
   const cashInAdvances = useMemo(() => {
-    return (allAdvances || []).filter((advance) => advance.status === 'reimbursed' && isInPeriod(advance.reimbursed_date || advance.spend_date, periodFilter));
+    return (allAdvances || []).filter((advance) => advance.funding_source === 'outside_budget' && advance.status === 'reimbursed' && isInPeriod(advance.reimbursed_date || advance.spend_date, periodFilter));
   }, [allAdvances, periodFilter]);
 
   const metrics = useMemo(() => {
@@ -191,7 +191,7 @@ export default function Dashboard() {
       feesTotalCount: filteredFees.length,
       feesPaidAmount,
       feesPendingAmount,
-      advancesOpenAmount: filteredAdvances.filter((advance) => advance.status === 'open').reduce((sum, advance) => sum + (advance.amount || 0), 0),
+      advancesOpenAmount: filteredAdvances.filter((advance) => advance.funding_source === 'outside_budget' && advance.status === 'open').reduce((sum, advance) => sum + (advance.amount || 0), 0),
       profitCash: cashIn - cashOut,
       allOverdueInvoices,
       totalOverdueAmount,
@@ -211,7 +211,7 @@ export default function Dashboard() {
       const payments = allPayments?.filter((payment) => monthOf(payment.payment_date) === month.value) || [];
       const fees = allFees?.filter((fee) => fee.status === 'paid' && monthOf(fee.paid_date || `${fee.period_month}-01`) === month.value) || [];
       const advancesOut = allAdvances?.filter((advance) => monthOf(advance.spend_date) === month.value) || [];
-      const advancesIn = allAdvances?.filter((advance) => advance.status === 'reimbursed' && monthOf(advance.reimbursed_date || advance.spend_date) === month.value) || [];
+      const advancesIn = allAdvances?.filter((advance) => advance.funding_source === 'outside_budget' && advance.status === 'reimbursed' && monthOf(advance.reimbursed_date || advance.spend_date) === month.value) || [];
       const advanceOut = advancesOut.reduce((sum, advance) => sum + (advance.amount || 0), 0);
       const advanceIn = advancesIn.reduce((sum, advance) => sum + (advance.amount || 0), 0);
       return {
@@ -492,7 +492,7 @@ export default function Dashboard() {
               <AnimatedNumber value={metrics.netCashflow.net} prefix={metrics.netCashflow.net < 0 ? '-Rp ' : 'Rp '} formatter={(v) => formatCurrency(Math.abs(v))} />
             </h2>
             <p className="mt-3 max-w-2xl text-sm text-gray-500">
-              Uang masuk dikurangi pembayaran freelancer dan talangan client. Talangan yang sudah diganti client dihitung masuk kembali. Saldo awal bank belum termasuk.
+              Uang masuk dikurangi biaya project, biaya client, dan operasional PT. Biaya client di luar budget yang sudah diganti akan dihitung masuk kembali. Saldo awal bank belum termasuk.
             </p>
           </div>
           <div className="grid grid-cols-2 border-t border-gray-100 bg-gray-50 lg:border-l lg:border-t-0">
@@ -516,7 +516,7 @@ export default function Dashboard() {
         <StatCard label="Invoice Dibuat" value={metrics.revenueIssued} count={`${metrics.revenueIssuedCount} invoice`} icon={FileText} tone="blue" delay={0.02} />
         <StatCard label="Uang Masuk" value={metrics.revenueReceived} count={`${metrics.revenueReceivedCount} invoice lunas`} icon={Banknote} tone="blue" trend="masuk" delay={0.08} />
         <StatCard label="Client Belum Bayar" value={metrics.outstandingAmount} count={`${metrics.outstandingCount} invoice belum lunas, ${metrics.outstandingOverdueCount} overdue`} icon={CreditCard} tone="amber" delay={0.14} />
-        <StatCard label="Net Kas Tercatat" value={metrics.profitCash} count={`Termasuk Rp ${formatCurrency(metrics.advancesOpenAmount)} talangan terbuka`} icon={TrendingUp} tone={metrics.profitCash < 0 ? 'red' : 'dark'} delay={0.2} />
+        <StatCard label="Net Kas Tercatat" value={metrics.profitCash} count={`Termasuk Rp ${formatCurrency(metrics.advancesOpenAmount)} biaya di luar budget`} icon={TrendingUp} tone={metrics.profitCash < 0 ? 'red' : 'dark'} delay={0.2} />
       </section>
 
       {alertElement}
