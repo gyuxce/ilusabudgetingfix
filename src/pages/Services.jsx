@@ -10,6 +10,23 @@ import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
 import { Badge } from '../components/ui/Badge';
 
+const ILUSA_SERVICE_CATALOG = [
+  'Branding LinkedIn Personal',
+  'Branding LinkedIn Business',
+  'Branding LinkedIn Personal & Business',
+  'Optimasi Market Place Shopee',
+  'Optimasi Market Place TikTok',
+  'Optimasi Google Maps',
+  'Optimasi App Rate Google Play',
+  'Optimasi App Rate Apps Store',
+  'Market Research',
+  'Inbound / Outbound Sales',
+  'Content Production',
+  'Digital Marketing',
+  'Outsource Service',
+  'Monthly Service',
+];
+
 export default function Services() {
   const { data: services, isLoading } = useServices();
   const createService = useCreateService();
@@ -58,7 +75,7 @@ export default function Services() {
     e.preventDefault();
     setFormError('');
 
-    if (!formData.name.trim()) {
+    if (!formData.name) {
         setFormError('Nama layanan wajib diisi.');
       return;
     }
@@ -189,14 +206,21 @@ export default function Services() {
             </div>
           )}
           <div>
-            <Input 
-              label="Nama Layanan *"
-              required 
+            <Select
+              label="Produk / Layanan Ilusa *"
+              required
               value={formData.name}
               onChange={e => setFormData({...formData, name: e.target.value})}
+              options={[
+                { value: '', label: 'Pilih produk atau layanan' },
+                ...(editingService && !ILUSA_SERVICE_CATALOG.includes(formData.name)
+                  ? [{ value: formData.name, label: `${formData.name} (data lama)` }]
+                  : []),
+                ...ILUSA_SERVICE_CATALOG.map(name => ({ value: name, label: name }))
+              ]}
             />
             <p className="text-xs text-gray-500 mt-1">
-              Nama yang sama boleh digunakan jika jenisnya berbeda, misalnya bulanan dan sekali.
+              Pilih dari katalog produk Ilusa agar nama layanan tetap konsisten.
             </p>
           </div>
           <Select 

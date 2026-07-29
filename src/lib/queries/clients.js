@@ -8,6 +8,7 @@ export function useClients() {
       const { data, error } = await supabase
         .from('clients')
         .select('*')
+        .order('status', { ascending: true })
         .order('company_name');
       if (error) throw new Error(error.message);
       return data;

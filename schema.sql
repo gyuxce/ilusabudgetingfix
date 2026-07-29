@@ -27,6 +27,8 @@ CREATE TABLE IF NOT EXISTS freelancers (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     name text NOT NULL UNIQUE,
     default_hourly_rate integer DEFAULT 17000,
+    default_fee_type text NOT NULL DEFAULT 'hourly' CHECK (default_fee_type IN ('hourly', 'fixed')),
+    default_fixed_amount integer NOT NULL DEFAULT 0 CHECK (default_fixed_amount >= 0),
     specialization text,
     status text NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive')),
     created_at timestamptz NOT NULL DEFAULT now(),

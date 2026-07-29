@@ -8,6 +8,7 @@ export function useFreelancers() {
       const { data, error } = await supabase
         .from('freelancers')
         .select('*')
+        .order('status', { ascending: true })
         .order('name');
       if (error) throw new Error(error.message);
       return data;

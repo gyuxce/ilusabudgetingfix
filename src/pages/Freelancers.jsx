@@ -27,6 +27,8 @@ export default function Freelancers() {
     name: '',
     specialization: '',
     default_hourly_rate: 17000,
+    default_fee_type: 'hourly',
+    default_fixed_amount: 0,
     status: 'active'
   });
   const [formError, setFormError] = useState('');
@@ -43,7 +45,7 @@ export default function Freelancers() {
 
   const handleOpenAdd = () => {
     setEditingFreelancer(null);
-    setFormData({ name: '', specialization: '', default_hourly_rate: 17000, status: 'active' });
+    setFormData({ name: '', specialization: '', default_hourly_rate: 17000, default_fee_type: 'hourly', default_fixed_amount: 0, status: 'active' });
     setFormError('');
     setIsModalOpen(true);
   };
@@ -55,6 +57,8 @@ export default function Freelancers() {
       name: freelancer.name || '',
       specialization: freelancer.specialization || '',
       default_hourly_rate: freelancer.default_hourly_rate ?? 17000,
+      default_fee_type: freelancer.default_fee_type || 'hourly',
+      default_fixed_amount: freelancer.default_fixed_amount ?? 0,
       status: freelancer.status || 'active'
     });
     setFormError('');
@@ -70,9 +74,11 @@ export default function Freelancers() {
       return;
     }
 
-    const defaultHourlyRate = parseInt(formData.default_hourly_rate, 10);
-    if (Number.isNaN(defaultHourlyRate) || defaultHourlyRate < 0) {
-      setFormError('Default hourly rate must be zero or greater.');
+    const defaultHourlyRate = parseInt(formData.default_hourly_rate, 10) || 0;
+    const defaultFixedAmount = parseInt(formData.default_fixed_amount, 10) || 0;
+    const defaultAmount = formData.default_fee_type === 'fixed' ? defaultFixedAmount : defaultHourlyRate;
+    if (defaultAmount <= 0) {
+      setFormError('Nominal pembayaran harus lebih besar dari 0.');
       return;
     }
 
@@ -81,6 +87,8 @@ export default function Freelancers() {
         name: formData.name.trim(),
         specialization: formData.specialization.trim() || null,
         default_hourly_rate: defaultHourlyRate,
+        default_fee_type: formData.default_fee_type,
+        default_fixed_amount: defaultFixedAmount,
         status: formData.status
       };
 
@@ -116,7 +124,7 @@ export default function Freelancers() {
   const columns = [
     { key: 'name', label: 'Name', render: (row) => <span className="font-medium text-gray-900">{row.name}</span> },
     { key: 'specialization', label: 'Specialization', render: (row) => row.specialization || '—' },
-    { key: 'default_hourly_rate', label: 'Rate/hour', render: (row) => `Rp ${formatCurrency(row.default_hourly_rate)}` },
+    { key: 'default_fee_type', label: 'Cara Bayar', render: (row) => row.default_fee_type === 'fixed' ? `Tetap - Rp ${formatCurrency(row.default_fixed_amount)}` : `Per jam - Rp ${formatCurrency(row.default_hourly_rate)}` },
     { key: 'status', label: 'Status', render: (row) => (
       <Badge variant={row.status === 'active' ? 'success' : 'neutral'}>
         {row.status === 'active' ? 'Active' : 'Inactive'}
@@ -214,11 +222,32 @@ export default function Freelancers() {
             value={formData.specialization}
             onChange={e => setFormData({...formData, specialization: e.target.value})}
           />
-          <CurrencyInput
-            label="Default Hourly Rate (Rp)" 
-            value={formData.default_hourly_rate}
-            onChange={e => setFormData({...formData, default_hourly_rate: e.target.value})}
+          <Select
+            label="Cara Pembayaran"
+            value={formData.default_fee_type}
+            onChange={e => setFormData({...formData, default_fee_type: e.target.value})}
+            options={[
+              { value: 'hourly', label: 'Rate per jam' },
+              { value: 'fixed', label: 'Nominal tetap' }
+            ]}
           />
+          {formData.default_fee_type === 'fixed' ? (
+            <CurrencyInput
+              label="Nominal Tetap (Rp)"
+              min="1"
+              required
+              value={formData.default_fixed_amount}
+              onChange={e => setFormData({...formData, default_fixed_amount: e.target.value})}
+            />
+          ) : (
+            <CurrencyInput
+              label="Rate Per Jam (Rp)"
+              min="1"
+              required
+              value={formData.default_hourly_rate}
+              onChange={e => setFormData({...formData, default_hourly_rate: e.target.value})}
+            />
+          )}
           <Select 
             label="Status" 
             value={formData.status}

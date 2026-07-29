@@ -453,18 +453,19 @@ export default function Expenses() {
           <div>
             <p className="mb-2 text-sm font-medium text-gray-700">Untuk apa biaya ini? *</p>
             <div className="grid grid-cols-3 gap-2">
-              <Button type="button" variant={formData.type === 'client' ? 'primary' : 'secondary'} onClick={() => setFormData({ ...formData, type: 'client' })}>
+              <Button className="h-10 w-full min-w-0 whitespace-nowrap px-2 text-xs" type="button" variant={formData.type === 'client' ? 'primary' : 'secondary'} onClick={() => setFormData({ ...formData, type: 'client' })}>
                 Client
               </Button>
-              <Button type="button" variant={formData.type === 'freelancer' ? 'primary' : 'secondary'} onClick={() => setFormData({ ...formData, type: 'freelancer' })}>
+              <Button className="h-10 w-full min-w-0 whitespace-nowrap px-2 text-xs" type="button" variant={formData.type === 'freelancer' ? 'primary' : 'secondary'} onClick={() => setFormData({ ...formData, type: 'freelancer' })}>
                 Project
               </Button>
-              <Button type="button" variant={formData.type === 'company' ? 'primary' : 'secondary'} onClick={() => setFormData({ ...formData, type: 'company' })}>
+              <Button className="h-10 w-full min-w-0 whitespace-nowrap px-2 text-xs" type="button" variant={formData.type === 'company' ? 'primary' : 'secondary'} onClick={() => setFormData({ ...formData, type: 'company' })}>
                 Operasional PT
               </Button>
             </div>
           </div>
 
+          <div className="min-h-[430px]">
           {formData.type === 'client' ? (
             <>
               <Select
@@ -532,6 +533,7 @@ export default function Expenses() {
               </div>
             </>
           )}
+          </div>
 
           <Textarea label="Catatan" rows={3} placeholder="Opsional" value={formData.notes} onChange={(event) => setFormData({ ...formData, notes: event.target.value })} />
         </form>

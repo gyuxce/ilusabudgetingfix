@@ -21,6 +21,7 @@ import { Badge } from '../components/ui/Badge';
 import { InvoiceDetailModal } from '../components/InvoiceDetailModal';
 import { RecordPaymentModal } from '../components/RecordPaymentModal';
 import { AnimatedNumber } from '../components/ui/AnimatedNumber';
+import { getClientLogo, ILUSA_LOGO_PATH } from '../lib/branding';
 
 const getPreviousMonthKey = (periodKey = currentMonthKey()) => {
   const [year, month] = periodKey.split('-').map(Number);
@@ -509,7 +510,7 @@ export default function Invoices() {
     const clientName = invoice.engagement?.client?.company_name || '-';
     const serviceName = invoice.engagement?.service?.name || '-';
     const clientRecord = clients?.find((client) => client.id === invoice.engagement?.client?.id);
-    const clientLogoUrl = clientRecord?.logo_url || invoice.engagement?.client?.logo_url || '';
+    const clientLogoUrl = getClientLogo(clientRecord || invoice.engagement?.client);
     const invoiceItems = invoice.invoice_items?.length > 0
       ? invoice.invoice_items
       : [{
@@ -545,7 +546,7 @@ export default function Invoices() {
     const bankName = companySettings?.bank_name || 'Bank transfer';
     const bankAccountNumber = companySettings?.bank_account_number || '-';
     const bankAccountHolder = companySettings?.bank_account_holder || legalName;
-    const companyLogoUrl = companySettings?.logo_url || '';
+    const companyLogoUrl = companySettings?.logo_url || ILUSA_LOGO_PATH;
     const companyLogo = companyLogoUrl
       ? `<img class="logo-image" src="${escapeHtml(companyLogoUrl)}" alt="${escapeHtml(brandName)} logo" />`
       : `<div class="logo-fallback">IL</div>`;
@@ -723,12 +724,12 @@ export default function Invoices() {
 
             <section class="section grid">
               <div class="box">
-                 <h2>Periode Layanan</h2>
+                 <h2>Bulan Pekerjaan</h2>
                 <strong>${escapeHtml(servicePeriod)}</strong>
                  <p class="small muted">Tagihan ini untuk pekerjaan pada ${escapeHtml(servicePeriod)}.</p>
               </div>
               <div class="box">
-                 <h2>Periode Tagihan</h2>
+                 <h2>Bulan Penagihan</h2>
                  <strong>${escapeHtml(billingMonth)}</strong>
                  <p class="small muted">Dibuat setelah periode layanan selesai.</p>
               </div>
@@ -740,7 +741,7 @@ export default function Invoices() {
                 <thead>
                   <tr>
                      <th>Layanan</th>
-                     <th>Periode</th>
+                     <th>Bulan Pekerjaan</th>
                      <th class="right">Nilai</th>
                   </tr>
                 </thead>
@@ -801,8 +802,8 @@ export default function Invoices() {
     { key: 'service', label: 'Layanan', render: (row) => row.invoice_items?.length > 1
       ? <span className="text-sm text-gray-600">{row.invoice_items.length} layanan</span>
       : <span className="text-sm text-gray-600">{row.engagement?.service?.name || '—'}</span> },
-    { key: 'billing_month', label: 'Bulan Tagihan', render: (row) => formatPeriod(row.effective_billing_month || row.billing_month) },
-    { key: 'period', label: 'Periode Jasa', render: (row) => formatPeriod(row.period_month) },
+    { key: 'billing_month', label: 'Bulan Penagihan', render: (row) => formatPeriod(row.effective_billing_month || row.billing_month) },
+    { key: 'period', label: 'Bulan Pekerjaan', render: (row) => formatPeriod(row.period_month) },
     { key: 'amount', label: 'Nilai', render: (row) => <span className="font-medium">Rp {formatCurrency(row.amount)}</span> },
     { key: 'paid_total', label: 'Dibayar / Total', render: (row) => {
         const totalPaid = row.total_paid || 0;
@@ -1161,7 +1162,7 @@ export default function Invoices() {
           )}
 
           <Input
-            label="Bulan Tagihan *"
+            label="Bulan Penagihan *"
             type="month"
             required
             value={formData.billing_month}
@@ -1171,7 +1172,7 @@ export default function Invoices() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Input 
-                label={selectedInvoiceRequiresPeriod ? "Periode Jasa *" : "Periode Jasa"}
+                label={selectedInvoiceRequiresPeriod ? "Bulan Pekerjaan *" : "Bulan Pekerjaan"}
                 type="month"
                 value={formData.period_month}
                 onChange={e => setFormData({...formData, period_month: e.target.value})}
@@ -1294,7 +1295,7 @@ export default function Invoices() {
           </div>
 
           <Input
-            label="Bulan Tagihan Awal *"
+            label="Bulan Penagihan Awal *"
             type="month"
             required
             value={bulkFormData.billing_month}
@@ -1305,14 +1306,14 @@ export default function Invoices() {
 
           <div className="grid grid-cols-2 gap-4">
             <Input 
-              label="Periode Jasa Awal *"
+              label="Bulan Pekerjaan Awal *"
               type="month"
               required
               value={bulkFormData.start_period}
               onChange={e => setBulkFormData({...bulkFormData, start_period: e.target.value})}
             />
             <Input 
-              label="Periode Jasa Akhir *"
+              label="Bulan Pekerjaan Akhir *"
               type="month"
               required
               value={bulkFormData.end_period}

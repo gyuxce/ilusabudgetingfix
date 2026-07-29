@@ -232,8 +232,13 @@ export default function Fees() {
     setFormData(prev => {
       const selected = freelancers?.find(f => f.id === newId);
       const nextData = { ...prev, freelancer_id: newId };
-      if (prev.fee_type === 'hourly' && selected) {
-        nextData.hourly_rate = selected.default_hourly_rate || 17000;
+      if (selected) {
+        if (selected.default_fee_type === 'fixed') {
+          nextData.fee_type = 'fixed';
+          nextData.fixed_amount = selected.default_fixed_amount || 0;
+        } else if (prev.fee_type === 'hourly') {
+          nextData.hourly_rate = selected.default_hourly_rate || 17000;
+        }
       }
       return nextData;
     });

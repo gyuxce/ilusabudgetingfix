@@ -11,6 +11,7 @@ import {
   LogOut,
 } from 'lucide-react';
 import { useAuth } from '../lib/AuthContext';
+import { ILUSA_LOGO_PATH } from '../lib/branding';
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -30,8 +31,8 @@ const mobileNavItems = navItems;
 function BrandMark() {
   return (
     <div className="flex items-center gap-3">
-      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-950 text-sm font-bold tracking-tight text-white shadow-sm shadow-gray-950/15">
-        IL
+      <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-lime-300 shadow-sm shadow-gray-950/15">
+        <img src={ILUSA_LOGO_PATH} alt="Ilusa" className="h-full w-full object-cover" />
       </div>
       <div className="min-w-0">
         <p className="truncate text-sm font-bold leading-none tracking-tight text-gray-950">Ilusa</p>
