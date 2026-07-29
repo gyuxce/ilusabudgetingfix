@@ -6,21 +6,50 @@ export function useInvoices() {
   return useQuery({
     queryKey: ['invoices'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('invoices_with_payments')
-        .select(`
-          *, 
-          engagement:engagements(
-            id, 
-            service_fee_per_month, 
-            client:clients(id, company_name), 
-            service:services(id, name)
-          )
-        `)
-        .order('due_date', { ascending: false });
+      const [invoiceResult, itemResult] = await Promise.all([
+        supabase
+          .from('invoices_with_payments')
+          .select(`
+            *,
+            engagement:engagements(
+              id,
+              service_fee_per_month,
+              client:clients(id, company_name),
+              service:services(id, name)
+            )
+          `)
+          .order('due_date', { ascending: false }),
+        supabase
+          .from('invoice_items')
+          .select(`
+            id,
+            invoice_id,
+            engagement_id,
+            description,
+            amount,
+            engagement:engagements(
+              id,
+              client:clients(id, company_name),
+              service:services(id, name, service_type)
+            )
+          `)
+          .order('created_at', { ascending: true }),
+      ]);
 
-      if (error) throw new Error(error.message);
-      return data;
+      if (invoiceResult.error) throw new Error(invoiceResult.error.message);
+      const itemsByInvoice = new Map();
+      if (!itemResult.error) {
+        (itemResult.data || []).forEach((item) => {
+          const items = itemsByInvoice.get(item.invoice_id) || [];
+          items.push(item);
+          itemsByInvoice.set(item.invoice_id, items);
+        });
+      }
+
+      return (invoiceResult.data || []).map((invoice) => ({
+        ...invoice,
+        invoice_items: itemsByInvoice.get(invoice.id) || [],
+      }));
     }
   });
 }
@@ -30,13 +59,20 @@ export function useInvoice(id) {
     queryKey: ['invoice', id],
     queryFn: async () => {
       if (!id) return null;
-      const { data, error } = await supabase
-        .from('invoices_with_payments')
-        .select('*, engagement:engagements(id, service_fee_per_month, client:clients(id, company_name), service:services(id, name))')
-        .eq('id', id)
-        .single();
-      if (error) throw new Error(error.message);
-      return data;
+      const [invoiceResult, itemResult] = await Promise.all([
+        supabase
+          .from('invoices_with_payments')
+          .select('*, engagement:engagements(id, service_fee_per_month, client:clients(id, company_name), service:services(id, name))')
+          .eq('id', id)
+          .single(),
+        supabase
+          .from('invoice_items')
+          .select('id, invoice_id, engagement_id, description, amount, engagement:engagements(id, client:clients(id, company_name), service:services(id, name, service_type))')
+          .eq('invoice_id', id)
+          .order('created_at', { ascending: true }),
+      ]);
+      if (invoiceResult.error) throw new Error(invoiceResult.error.message);
+      return { ...invoiceResult.data, invoice_items: itemResult.error ? [] : (itemResult.data || []) };
     },
     enabled: !!id
   });
@@ -45,13 +81,22 @@ export function useInvoice(id) {
 export function useCreateInvoice() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (invoiceData) => {
+    mutationFn: async ({ invoice_items: invoiceItems = [], ...invoiceData }) => {
       const { data, error } = await supabase
         .from('invoices')
         .insert([invoiceData])
         .select()
         .single();
       if (error) throw new Error(error.message);
+      if (invoiceItems.length > 0) {
+        const { error: itemsError } = await supabase
+          .from('invoice_items')
+          .insert(invoiceItems.map((item) => ({ ...item, invoice_id: data.id })));
+        if (itemsError) {
+          await supabase.from('invoices').delete().eq('id', data.id);
+          throw new Error(itemsError.message);
+        }
+      }
       await logAudit('invoice.created', 'invoice', data.id, {
         amount: data.amount,
         billing_month: data.billing_month,
@@ -70,11 +115,23 @@ export function useCreateInvoicesBulk() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (invoicesArray) => {
+      const invoiceRows = invoicesArray.map(({ invoice_items: _items, ...invoice }) => invoice);
       const { data, error } = await supabase
         .from('invoices')
-        .insert(invoicesArray)
+        .insert(invoiceRows)
         .select();
       if (error) throw new Error(error.message);
+      const itemRows = invoicesArray.flatMap((invoice, index) => (invoice.invoice_items || []).map((item) => ({
+        ...item,
+        invoice_id: data[index].id,
+      })));
+      if (itemRows.length > 0) {
+        const { error: itemsError } = await supabase.from('invoice_items').insert(itemRows);
+        if (itemsError) {
+          await supabase.from('invoices').delete().in('id', (data || []).map((invoice) => invoice.id));
+          throw new Error(itemsError.message);
+        }
+      }
       await Promise.all((data || []).map((invoice) => logAudit('invoice.created_bulk', 'invoice', invoice.id, {
         amount: invoice.amount,
         billing_month: invoice.billing_month,

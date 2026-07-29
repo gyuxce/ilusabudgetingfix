@@ -355,31 +355,34 @@ export default function Invoices() {
         };
         await updateInvoice.mutateAsync({ id: editingInvoice.id, ...payload });
       } else {
-        const invoicePayloads = amounts.map(({ engagementId, amount }, index) => ({
-          engagement_id: engagementId,
+        const invoiceTotal = amounts.reduce((total, item) => total + item.amount, 0);
+        await createInvoice.mutateAsync({
+          engagement_id: selectedEngagementIds[0],
           billing_month: formData.billing_month || (formData.issue_date ? formData.issue_date.slice(0, 7) : null),
           period_month: formData.period_month || null,
-          invoice_number: selectedEngagementIds.length === 1 && formData.invoice_number.trim()
-            ? formData.invoice_number.trim()
-            : generateInvoiceNumber(formData.period_month || formData.issue_date, getNextInvoiceSequence(invoices, index)),
-          amount,
+          invoice_number: formData.invoice_number.trim() || generateInvoiceNumber(formData.period_month || formData.issue_date, getNextInvoiceSequence(invoices)),
+          amount: invoiceTotal,
           issue_date: formData.issue_date,
           due_date: formData.due_date,
           status: formData.status,
           paid_date: null,
           notes: formData.notes.trim() || null,
-        }));
-        if (invoicePayloads.length === 1) {
-          await createInvoice.mutateAsync(invoicePayloads[0]);
-        } else {
-          await createInvoicesBulk.mutateAsync(invoicePayloads);
-        }
+          invoice_items: selectedEngagementIds.length > 1
+            ? amounts.map(({ engagementId, amount }) => ({
+                engagement_id: engagementId,
+                description: selectedEngagements.find((engagement) => engagement.id === engagementId)?.service?.name || null,
+                amount,
+              }))
+            : [],
+        });
       }
       
       setIsModalOpen(false);
-      showToast(editingInvoice ? 'Invoice updated!' : `${selectedEngagementIds.length} invoice berhasil dibuat!`);
+      showToast(editingInvoice ? 'Invoice updated!' : 'Invoice berhasil dibuat.');
     } catch (err) {
-      setFormError(err.message);
+      setFormError(err.message.includes('invoice_items')
+        ? 'Database belum menyiapkan rincian layanan. Jalankan migration invoice-items-and-logos.sql di Supabase dulu.'
+        : err.message);
     }
   };
 
@@ -505,6 +508,15 @@ export default function Invoices() {
     const invoiceNumber = invoice.invoice_number || generateInvoiceNumber(invoice.period_month || invoice.issue_date, 1);
     const clientName = invoice.engagement?.client?.company_name || '-';
     const serviceName = invoice.engagement?.service?.name || '-';
+    const clientRecord = clients?.find((client) => client.id === invoice.engagement?.client?.id);
+    const clientLogoUrl = clientRecord?.logo_url || invoice.engagement?.client?.logo_url || '';
+    const invoiceItems = invoice.invoice_items?.length > 0
+      ? invoice.invoice_items
+      : [{
+          engagement: invoice.engagement,
+          description: serviceName,
+          amount: invoice.amount || 0,
+        }];
     const billingMonth = formatPeriod(invoice.effective_billing_month || invoice.billing_month || invoice.issue_date?.slice(0, 7));
     const servicePeriod = formatPeriod(invoice.period_month);
     const issueDate = invoice.issue_date ? format(new Date(invoice.issue_date), 'dd MMM yyyy') : '-';
@@ -517,12 +529,12 @@ export default function Invoices() {
     today.setHours(0, 0, 0, 0);
     const daysUntilDue = invoice.due_date ? differenceInDays(new Date(invoice.due_date), today) : null;
     const dueCopy = daysUntilDue === null
-      ? 'Due date pending'
+      ? 'Tanggal jatuh tempo belum diisi'
       : daysUntilDue < 0
-        ? `${Math.abs(daysUntilDue)} days overdue`
+        ? `Terlambat ${Math.abs(daysUntilDue)} hari`
         : daysUntilDue === 0
-          ? 'Due today'
-          : `Due in ${daysUntilDue} days`;
+          ? 'Jatuh tempo hari ini'
+          : `Jatuh tempo ${daysUntilDue} hari lagi`;
     const notes = invoice.notes || 'This invoice covers services delivered during the service period stated above.';
     const brandName = companySettings?.brand_name || 'Ilusa';
     const legalName = companySettings?.legal_name || 'PT. Inovasi Langkah Usaha';
@@ -533,7 +545,22 @@ export default function Invoices() {
     const bankName = companySettings?.bank_name || 'Bank transfer';
     const bankAccountNumber = companySettings?.bank_account_number || '-';
     const bankAccountHolder = companySettings?.bank_account_holder || legalName;
-    const paymentTerms = companySettings?.default_payment_terms || `Please use the invoice number as payment reference and confirm payment to ${email}.`;
+    const companyLogoUrl = companySettings?.logo_url || '';
+    const companyLogo = companyLogoUrl
+      ? `<img class="logo-image" src="${escapeHtml(companyLogoUrl)}" alt="${escapeHtml(brandName)} logo" />`
+      : `<div class="logo-fallback">IL</div>`;
+    const clientLogo = clientLogoUrl
+      ? `<img class="client-logo" src="${escapeHtml(clientLogoUrl)}" alt="${escapeHtml(clientName)} logo" />`
+      : '';
+    const invoiceItemsHtml = invoiceItems.map((item) => {
+      const itemServiceName = item.description || item.engagement?.service?.name || 'Layanan';
+      const itemPeriod = formatPeriod(invoice.period_month);
+      return `<tr>
+        <td><strong>${escapeHtml(itemServiceName)}</strong></td>
+        <td>${escapeHtml(itemPeriod)}</td>
+        <td class="right"><strong>Rp ${formatCurrency(item.amount || 0)}</strong></td>
+      </tr>`;
+    }).join('');
 
     return `<!doctype html>
       <html>
@@ -560,28 +587,22 @@ export default function Invoices() {
               display: flex;
               flex-direction: column;
             }
-            .top {
-              display: flex;
-              justify-content: space-between;
-              gap: 24px;
-              border: 1px solid #111827;
-              border-radius: 10px;
-              overflow: hidden;
-            }
-            .brand-panel {
-              flex: 1;
-              padding: 15px 18px;
-              background: #111827;
-              color: #fff;
-            }
-            .meta-panel {
-              width: 76mm;
-              padding: 15px 18px;
-              background: #fff;
-            }
-            .brand { font-size: 25px; font-weight: 800; letter-spacing: -0.02em; }
+             .top {
+               display: flex;
+               justify-content: space-between;
+               gap: 24px;
+               border-bottom: 2px solid #111827;
+               padding-bottom: 16px;
+             }
+             .brand-panel { flex: 1; color: #111827; }
+             .meta-panel { width: 76mm; background: #fff; }
+             .brand-row { display: flex; align-items: center; gap: 11px; }
+             .logo-image, .logo-fallback { width: 42px; height: 42px; border-radius: 8px; object-fit: contain; }
+             .logo-fallback { display: grid; place-items: center; background: #111827; color: #fff; font-size: 15px; font-weight: 800; }
+             .client-logo { width: 36px; height: 36px; border-radius: 7px; object-fit: contain; float: right; margin-left: 10px; }
+             .brand { font-size: 25px; font-weight: 800; letter-spacing: -0.02em; }
             .muted { color: #6b7280; }
-            .light { color: #d1d5db; }
+             .light { color: #6b7280; }
             .small { font-size: 10.5px; line-height: 1.45; }
             p { margin: 5px 0 0; }
             strong { color: #111827; }
@@ -597,19 +618,20 @@ export default function Invoices() {
             .meta { text-align: left; }
             .meta-row { display: grid; grid-template-columns: 74px 1fr; gap: 10px; margin-top: 6px; font-size: 11px; }
             .meta-row span:first-child { color: #6b7280; }
-            .status {
-              display: inline-flex;
-              margin-top: 10px;
-              border: 1px solid #111827;
-              border-radius: 999px;
-              padding: 4px 9px;
-              font-size: 9px;
-              font-weight: 800;
-              letter-spacing: 0.12em;
-            }
+             .status {
+               display: inline-flex;
+               margin-top: 10px;
+               border: 1px solid #d1d5db;
+               border-radius: 999px;
+               padding: 4px 9px;
+               font-size: 9px;
+               font-weight: 800;
+               letter-spacing: 0.12em;
+               color: #374151;
+             }
             .section { margin-top: 15px; }
             .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-            .box { border: 1px solid #e5e7eb; border-radius: 8px; padding: 11px 12px; }
+             .box { border: 1px solid #e5e7eb; border-radius: 8px; padding: 11px 12px; overflow: hidden; }
             .balance {
               border-color: #111827;
               background: #f9fafb;
@@ -665,29 +687,35 @@ export default function Invoices() {
         <body>
           <main class="page">
             <header class="top">
-              <div class="brand-panel">
-                <p class="eyebrow light">${escapeHtml(legalName)}</p>
-                <div class="brand">${escapeHtml(brandName)}</div>
-                <p class="small light">${escapeHtml(tagline)}<br/>${escapeHtml(city)}, ${escapeHtml(country)}<br/>${escapeHtml(email)}</p>
+               <div class="brand-panel">
+                 <div class="brand-row">
+                   ${companyLogo}
+                   <div>
+                     <p class="eyebrow light">${escapeHtml(legalName)}</p>
+                     <div class="brand">${escapeHtml(brandName)}</div>
+                   </div>
+                 </div>
+                 <p class="small light">${escapeHtml(tagline)}<br/>${escapeHtml(city)}, ${escapeHtml(country)}<br/>${escapeHtml(email)}</p>
               </div>
               <div class="meta-panel meta">
-                <p class="eyebrow muted">Client Billing</p>
+                 <p class="eyebrow muted">Tagihan Client</p>
                 <h1>Invoice</h1>
-                <div class="meta-row"><span>Invoice #</span><strong>${escapeHtml(invoiceNumber)}</strong></div>
-                <div class="meta-row"><span>Issue Date</span><strong>${escapeHtml(issueDate)}</strong></div>
-                <div class="meta-row"><span>Due Date</span><strong>${escapeHtml(dueDate)}</strong></div>
+                 <div class="meta-row"><span>Nomor Invoice</span><strong>${escapeHtml(invoiceNumber)}</strong></div>
+                 <div class="meta-row"><span>Tanggal Invoice</span><strong>${escapeHtml(issueDate)}</strong></div>
+                 <div class="meta-row"><span>Jatuh Tempo</span><strong>${escapeHtml(dueDate)}</strong></div>
                 <span class="status">${escapeHtml(statusLabel)}</span>
               </div>
             </header>
 
             <section class="section grid">
               <div class="box">
-                <h2>Bill To</h2>
-                <strong>${escapeHtml(clientName)}</strong>
-                <p class="small muted">Invoice for ${escapeHtml(serviceName)}</p>
+                 ${clientLogo}
+                 <h2>Ditagihkan Kepada</h2>
+                 <strong>${escapeHtml(clientName)}</strong>
+                 <p class="small muted">Invoice untuk ${invoiceItems.length} layanan</p>
               </div>
               <div class="box balance">
-                <h2>Total Due</h2>
+                 <h2>Total Tagihan</h2>
                 <strong>Rp ${formatCurrency(balance)}</strong>
                 <p class="small muted">${escapeHtml(dueCopy)}</p>
               </div>
@@ -695,62 +723,52 @@ export default function Invoices() {
 
             <section class="section grid">
               <div class="box">
-                <h2>Service Period</h2>
+                 <h2>Periode Layanan</h2>
                 <strong>${escapeHtml(servicePeriod)}</strong>
-                <p class="small muted">This billing month covers work delivered in ${escapeHtml(servicePeriod)}.</p>
+                 <p class="small muted">Tagihan ini untuk pekerjaan pada ${escapeHtml(servicePeriod)}.</p>
               </div>
               <div class="box">
-                <h2>Payment Terms</h2>
-                <strong>Monthly billing in arrears</strong>
-                <p class="small muted">Billing month ${escapeHtml(billingMonth)} covers service period ${escapeHtml(servicePeriod)}.</p>
+                 <h2>Periode Tagihan</h2>
+                 <strong>${escapeHtml(billingMonth)}</strong>
+                 <p class="small muted">Dibuat setelah periode layanan selesai.</p>
               </div>
             </section>
 
             <section class="section">
-              <h2>Invoice Items</h2>
+               <h2>Rincian Layanan</h2>
               <table>
                 <thead>
                   <tr>
-                    <th>Description</th>
-                    <th>Service Period</th>
-                    <th class="right">Amount</th>
+                     <th>Layanan</th>
+                     <th>Periode</th>
+                     <th class="right">Nilai</th>
                   </tr>
                 </thead>
-                <tbody>
-                  <tr>
-                    <td>
-                      <strong>${escapeHtml(serviceName)}</strong>
-                      <div class="small muted">${escapeHtml(clientName)}</div>
-                    </td>
-                    <td>${escapeHtml(servicePeriod)}</td>
-                    <td class="right"><strong>Rp ${formatCurrency(amount)}</strong></td>
-                  </tr>
-                </tbody>
+                 <tbody>${invoiceItemsHtml}</tbody>
               </table>
               <div class="total">
-                <div class="total-row"><span>Subtotal</span><span>Rp ${formatCurrency(amount)}</span></div>
-                <div class="total-row"><span>Paid</span><span>Rp ${formatCurrency(paidAmount)}</span></div>
-                <div class="total-row"><span>Total Due</span><span>Rp ${formatCurrency(balance)}</span></div>
+                 <div class="total-row"><span>Subtotal</span><span>Rp ${formatCurrency(amount)}</span></div>
+                 <div class="total-row"><span>Sudah Dibayar</span><span>Rp ${formatCurrency(paidAmount)}</span></div>
+                 <div class="total-row"><span>Sisa Tagihan</span><span>Rp ${formatCurrency(balance)}</span></div>
               </div>
             </section>
 
             <section class="notes-grid small">
               <div class="box">
-                <h2>Notes</h2>
+                 <h2>Catatan</h2>
                 <p class="muted">${escapeHtml(notes)}</p>
               </div>
               <div class="box">
-                <h2>Payment Instruction</h2>
+                 <h2>Instruksi Pembayaran</h2>
                 <p><strong>${escapeHtml(bankName)}</strong></p>
-                <p>Account: ${escapeHtml(bankAccountNumber)}<br/>Holder: ${escapeHtml(bankAccountHolder)}</p>
-                <p class="muted">${escapeHtml(paymentTerms)}</p>
+                 <p>Nomor Rekening: ${escapeHtml(bankAccountNumber)}<br/>Atas Nama: ${escapeHtml(bankAccountHolder)}</p>
               </div>
             </section>
 
             <section class="footer small">
               <div>
-                <strong>Thank you for your partnership.</strong>
-                <p class="muted">This invoice was generated by Ilusa Budget Controlling.</p>
+                 <strong>Terima kasih atas kerja samanya.</strong>
+                 <p class="muted">Invoice dibuat oleh Ilusa Budget Controlling.</p>
               </div>
               <div>
                 <strong>${escapeHtml(brandName)} Partnership Team</strong>
@@ -780,7 +798,9 @@ export default function Invoices() {
   const columns = [
     { key: 'invoice_number', label: 'Invoice #', render: (row) => row.invoice_number ? <span className="font-medium text-gray-900">{row.invoice_number}</span> : <span className="text-gray-400">—</span> },
     { key: 'client', label: 'Client', render: (row) => <span className="font-medium text-gray-900">{row.engagement?.client?.company_name || '—'}</span> },
-    { key: 'service', label: 'Layanan', render: (row) => <span className="text-sm text-gray-600">{row.engagement?.service?.name || '—'}</span> },
+    { key: 'service', label: 'Layanan', render: (row) => row.invoice_items?.length > 1
+      ? <span className="text-sm text-gray-600">{row.invoice_items.length} layanan</span>
+      : <span className="text-sm text-gray-600">{row.engagement?.service?.name || '—'}</span> },
     { key: 'billing_month', label: 'Bulan Tagihan', render: (row) => formatPeriod(row.effective_billing_month || row.billing_month) },
     { key: 'period', label: 'Periode Jasa', render: (row) => formatPeriod(row.period_month) },
     { key: 'amount', label: 'Nilai', render: (row) => <span className="font-medium">Rp {formatCurrency(row.amount)}</span> },

@@ -16,6 +16,7 @@ export function InvoiceDetailModal({ open, onClose, invoice, onRecordPayment }) 
   const balance = invoice.balance || 0;
   const amount = invoice.amount || 0;
   const percent = amount > 0 ? Math.min(Math.round((totalPaid / amount) * 100), 100) : 0;
+  const invoiceItems = invoice.invoice_items || [];
   
   const formatCurrency = (val) => new Intl.NumberFormat('id-ID').format(val || 0);
 
@@ -39,6 +40,20 @@ export function InvoiceDetailModal({ open, onClose, invoice, onRecordPayment }) 
       <div className="mb-4">
         <p className="text-sm text-gray-500 font-medium">Invoice {invoice.invoice_number || '—'} · {formatPeriod(invoice.period_month)}</p>
       </div>
+
+      {invoiceItems.length > 1 && (
+        <div className="mb-6 rounded-md border border-gray-200 bg-gray-50 p-3">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">Rincian layanan</p>
+          <div className="space-y-2">
+            {invoiceItems.map((item) => (
+              <div key={item.id} className="flex items-center justify-between gap-3 text-sm">
+                <span className="text-gray-700">{item.description || item.engagement?.service?.name || 'Layanan'}</span>
+                <span className="font-medium text-gray-900">Rp {formatCurrency(item.amount)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-4 mb-6">
         <div>

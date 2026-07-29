@@ -28,6 +28,7 @@ export default function Clients() {
     pic_name: '',
     phone_number: '',
     location: '',
+    logo_url: '',
     status: 'active',
     notes: ''
   });
@@ -45,7 +46,7 @@ export default function Clients() {
 
   const handleOpenAdd = () => {
     setEditingClient(null);
-    setFormData({ company_name: '', pic_name: '', phone_number: '', location: '', status: 'active', notes: '' });
+    setFormData({ company_name: '', pic_name: '', phone_number: '', location: '', logo_url: '', status: 'active', notes: '' });
     setFormError('');
     setIsModalOpen(true);
   };
@@ -58,6 +59,7 @@ export default function Clients() {
       pic_name: client.pic_name || '',
       phone_number: client.phone_number || '',
       location: client.location || '',
+      logo_url: client.logo_url || '',
       status: client.status || 'active',
       notes: client.notes || ''
     });
@@ -80,6 +82,7 @@ export default function Clients() {
         pic_name: formData.pic_name.trim() || null,
         phone_number: formData.phone_number.trim() || null,
         location: formData.location.trim() || null,
+        ...(formData.logo_url.trim() ? { logo_url: formData.logo_url.trim() } : {}),
         status: formData.status,
         notes: formData.notes.trim() || null
       };
@@ -222,6 +225,13 @@ export default function Clients() {
             label="Location" 
             value={formData.location}
             onChange={e => setFormData({...formData, location: e.target.value})}
+          />
+          <Input
+            label="Logo Client (URL, opsional)"
+            type="url"
+            placeholder="https://.../logo.png"
+            value={formData.logo_url}
+            onChange={e => setFormData({...formData, logo_url: e.target.value})}
           />
           <Select 
             label="Status" 

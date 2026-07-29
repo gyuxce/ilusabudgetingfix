@@ -14,6 +14,7 @@ const defaults = {
   address_line1: '',
   city: 'Yogyakarta',
   country: 'Indonesia',
+  logo_url: '',
   email: 'partnership@ilusa.id',
   phone: '',
   website: '',
@@ -76,6 +77,7 @@ export default function Settings() {
             <Input label="Phone" value={formData.phone || ''} onChange={(e) => setField('phone', e.target.value)} />
             <Input label="City" value={formData.city || ''} onChange={(e) => setField('city', e.target.value)} />
             <Input label="Country" value={formData.country || ''} onChange={(e) => setField('country', e.target.value)} />
+            <Input label="Logo Ilusa (URL, opsional)" type="url" placeholder="https://.../logo.png" value={formData.logo_url || ''} onChange={(e) => setField('logo_url', e.target.value)} />
           </div>
           <div className="mt-4 space-y-4">
             <Input label="Tagline" value={formData.tagline || ''} onChange={(e) => setField('tagline', e.target.value)} />

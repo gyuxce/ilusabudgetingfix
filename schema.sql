@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS clients (
     pic_name text,
     phone_number text,
     location text,
+    logo_url text,
     status text NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive')),
     notes text,
     created_at timestamptz NOT NULL DEFAULT now(),
@@ -86,6 +87,17 @@ CREATE TABLE IF NOT EXISTS invoice_payments (
     created_at timestamptz NOT NULL DEFAULT now()
 );
 
+-- ===== invoice_items =====
+CREATE TABLE IF NOT EXISTS invoice_items (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    invoice_id uuid NOT NULL REFERENCES invoices(id) ON DELETE CASCADE,
+    engagement_id uuid NOT NULL REFERENCES engagements(id) ON DELETE RESTRICT,
+    description text,
+    amount integer NOT NULL CHECK (amount >= 0),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT invoice_items_invoice_engagement_unique UNIQUE (invoice_id, engagement_id)
+);
+
 -- ===== client_advances =====
 CREATE TABLE IF NOT EXISTS client_advances (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -101,6 +113,8 @@ CREATE TABLE IF NOT EXISTS client_advances (
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now()
 );
+
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS logo_url text;
 
 -- ===== freelancer_fees =====
 CREATE TABLE IF NOT EXISTS freelancer_fees (
@@ -298,6 +312,9 @@ CREATE INDEX IF NOT EXISTS idx_invoices_period_month ON invoices(period_month);
 CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices(status);
 CREATE INDEX IF NOT EXISTS idx_invoices_due_date ON invoices(due_date);
 
+CREATE INDEX IF NOT EXISTS idx_invoice_items_invoice_id ON invoice_items(invoice_id);
+CREATE INDEX IF NOT EXISTS idx_invoice_items_engagement_id ON invoice_items(engagement_id);
+
 CREATE INDEX IF NOT EXISTS idx_invoice_payments_invoice ON invoice_payments(invoice_id);
 CREATE INDEX IF NOT EXISTS idx_invoice_payments_date ON invoice_payments(payment_date);
 
@@ -419,6 +436,7 @@ ALTER TABLE freelancers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE services ENABLE ROW LEVEL SECURITY;
 ALTER TABLE engagements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE invoices ENABLE ROW LEVEL SECURITY;
+ALTER TABLE invoice_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE invoice_payments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE client_advances ENABLE ROW LEVEL SECURITY;
 ALTER TABLE freelancer_fees ENABLE ROW LEVEL SECURITY;
@@ -443,6 +461,11 @@ CREATE POLICY engagements_authenticated_all ON engagements FOR ALL TO authentica
 
 DROP POLICY IF EXISTS invoices_authenticated_all ON invoices;
 CREATE POLICY invoices_authenticated_all ON invoices FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS invoice_items_authenticated_all ON invoice_items;
+CREATE POLICY invoice_items_authenticated_all ON invoice_items FOR ALL TO authenticated USING (true) WITH CHECK (true);
+GRANT ALL ON TABLE public.invoice_items TO authenticated;
+GRANT ALL ON TABLE public.invoice_items TO service_role;
 
 DROP POLICY IF EXISTS invoice_payments_authenticated_all ON invoice_payments;
 CREATE POLICY invoice_payments_authenticated_all ON invoice_payments FOR ALL TO authenticated USING (true) WITH CHECK (true);
