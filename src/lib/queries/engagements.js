@@ -50,6 +50,23 @@ export function useCreateEngagement() {
   });
 }
 
+export function useCreateEngagementsBulk() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (engagementsData) => {
+      const { data, error } = await supabase
+        .from('engagements')
+        .insert(engagementsData)
+        .select();
+      if (error) throw new Error(error.message);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['engagements'] });
+    }
+  });
+}
+
 export function useUpdateEngagement() {
   const queryClient = useQueryClient();
   return useMutation({

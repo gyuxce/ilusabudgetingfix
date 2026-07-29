@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Modal } from './ui/Modal';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
+import { CurrencyInput } from './ui/CurrencyInput';
 import { Textarea } from './ui/Textarea';
 import { formatPeriod } from '../lib/utils';
 import { format } from 'date-fns';
@@ -109,17 +110,14 @@ export function RecordPaymentModal({ open, onClose, invoice, onSuccess }) {
         )}
 
         <div>
-           <Input 
+           <CurrencyInput
              label="Nominal *"
-             type="number" 
              required 
              min="1"
              value={formData.amount} 
              onChange={e => setFormData({...formData, amount: e.target.value})} 
            />
-           <p className="text-xs mt-1 font-medium text-gray-700 uppercase tracking-wider">
-             = Rp {formatCurrency(parseInt(formData.amount, 10) || 0)}
-           </p>
+           <p className="text-xs mt-1 text-gray-500">Masukkan nominal pembayaran dalam Rupiah.</p>
         </div>
 
         <Input 

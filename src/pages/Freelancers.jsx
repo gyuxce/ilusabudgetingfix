@@ -7,6 +7,7 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { DataTable } from '../components/ui/DataTable';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
+import { CurrencyInput } from '../components/ui/CurrencyInput';
 import { Select } from '../components/ui/Select';
 import { Badge } from '../components/ui/Badge';
 
@@ -213,9 +214,8 @@ export default function Freelancers() {
             value={formData.specialization}
             onChange={e => setFormData({...formData, specialization: e.target.value})}
           />
-          <Input 
+          <CurrencyInput
             label="Default Hourly Rate (Rp)" 
-            type="number"
             value={formData.default_hourly_rate}
             onChange={e => setFormData({...formData, default_hourly_rate: e.target.value})}
           />

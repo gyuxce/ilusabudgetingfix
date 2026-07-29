@@ -14,6 +14,7 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { DataTable } from '../components/ui/DataTable';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
+import { CurrencyInput } from '../components/ui/CurrencyInput';
 import { Select } from '../components/ui/Select';
 import { Textarea } from '../components/ui/Textarea';
 import { Badge } from '../components/ui/Badge';
@@ -43,6 +44,23 @@ const generateInvoiceNumber = (issueDate, sequence = 1) => {
   const safeIssueDate = issueDate || format(new Date(), 'yyyy-MM-dd');
   const [year, month] = safeIssueDate.split('-');
   return `ILUSA-INV-${year}-${month}-${String(sequence).padStart(3, '0')}`;
+};
+
+const extractInvoiceSequence = (invoiceNumber) => {
+  const value = String(invoiceNumber || '').trim();
+  const prefix = value.match(/^(\d{3,})\b/);
+  if (prefix) return Number(prefix[1]);
+
+  const suffix = value.match(/(?:^|[-/])(\d{3,})$/);
+  return suffix ? Number(suffix[1]) : 0;
+};
+
+const getNextInvoiceSequence = (existingInvoices = [], offset = 0) => {
+  const highestSequence = existingInvoices.reduce(
+    (highest, invoice) => Math.max(highest, extractInvoiceSequence(invoice.invoice_number)),
+    0,
+  );
+  return highestSequence + offset + 1;
 };
 
 const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
@@ -205,7 +223,7 @@ export default function Invoices() {
       engagement_id: engagements?.[0]?.id || '',
       billing_month: defaultBillingMonth,
       period_month: defaultServicePeriod,
-      invoice_number: '',
+      invoice_number: generateInvoiceNumber(defaultIssueDate, getNextInvoiceSequence(invoices)),
       amount: engagements?.[0]?.service_fee_per_month || 0,
       issue_date: defaultIssueDate,
       due_date: defaultDueDate,
@@ -276,7 +294,7 @@ export default function Invoices() {
       const payload = {
         ...formData,
         amount: fee,
-        invoice_number: formData.invoice_number.trim() || generateInvoiceNumber(formData.issue_date, (invoices?.length || 0) + 1),
+        invoice_number: formData.invoice_number.trim() || generateInvoiceNumber(formData.issue_date, getNextInvoiceSequence(invoices)),
         notes: formData.notes.trim() || null,
         billing_month: formData.billing_month || (formData.issue_date ? formData.issue_date.slice(0, 7) : null),
         period_month: formData.period_month || null
@@ -366,7 +384,7 @@ export default function Invoices() {
           issue_date,
           due_date,
           status: bulkFormData.status || 'draft',
-          invoice_number: generateInvoiceNumber(issue_date, (invoices?.length || 0) + index + 1),
+          invoice_number: generateInvoiceNumber(issue_date, getNextInvoiceSequence(invoices, index)),
           paid_date: null,
           notes: `Invoice for service period ${formatPeriod(period)}. Billing month ${formatPeriod(billingMonth)}.`
         };
@@ -1015,18 +1033,14 @@ export default function Invoices() {
           </div>
 
           <div>
-            <Input 
+            <CurrencyInput
               label="Nilai Tagihan *"
-              type="number"
               min="0"
               required
               value={formData.amount}
               onChange={e => setFormData({...formData, amount: e.target.value})}
             />
-            <p className="text-xs text-gray-500 mt-1">Auto-filled from engagement (you can edit if needed)</p>
-            <p className="text-xs mt-1 uppercase tracking-wider font-medium text-gray-700">
-              = <AnimatedNumber value={parseInt(formData.amount, 10) || 0} prefix="Rp " />
-            </p>
+            <p className="text-xs text-gray-500 mt-1">Terisi dari project, masih bisa diedit.</p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -1141,9 +1155,8 @@ export default function Invoices() {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <Input 
+            <CurrencyInput
               label="Nilai per Invoice *"
-              type="number"
               min="0"
               required
               value={bulkFormData.amount}

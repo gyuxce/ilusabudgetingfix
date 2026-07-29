@@ -21,6 +21,7 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { DataTable } from '../components/ui/DataTable';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
+import { CurrencyInput } from '../components/ui/CurrencyInput';
 import { Select } from '../components/ui/Select';
 import { Textarea } from '../components/ui/Textarea';
 import { Badge } from '../components/ui/Badge';
@@ -589,23 +590,23 @@ export default function Fees() {
           <div className="mt-6 border-t border-gray-200 pt-4">
             {formData.fee_type === 'hourly' ? (
               <div className="grid grid-cols-2 gap-4">
-                <Input label="Hourly Rate *" type="number" min="0" required value={formData.hourly_rate} onChange={e => setFormData({...formData, hourly_rate: e.target.value})} />
+                <CurrencyInput label="Hourly Rate *" min="0" required value={formData.hourly_rate} onChange={e => setFormData({...formData, hourly_rate: e.target.value})} />
                 <Input label="Hours per Day *" type="number" step="0.5" min="0" required value={formData.hours_per_day} onChange={e => setFormData({...formData, hours_per_day: e.target.value})} />
                 <Input label="Working Days *" type="number" min="0" required value={formData.working_days} onChange={e => setFormData({...formData, working_days: e.target.value})} />
                 <Input label="Off Days" type="number" min="0" value={formData.off_days} onChange={e => setFormData({...formData, off_days: e.target.value})} />
               </div>
             ) : formData.fee_type === 'per_content' ? (
               <div className="grid grid-cols-2 gap-4">
-                <Input label="Rate Single Post" type="number" min="0" value={formData.rate_single_post} onChange={e => setFormData({...formData, rate_single_post: e.target.value})} />
+                <CurrencyInput label="Rate Single Post" min="0" value={formData.rate_single_post} onChange={e => setFormData({...formData, rate_single_post: e.target.value})} />
                 <Input label="Qty Single Post" type="number" min="0" value={formData.qty_single_post} onChange={e => setFormData({...formData, qty_single_post: e.target.value})} />
-                <Input label="Rate Carousel" type="number" min="0" value={formData.rate_carousel} onChange={e => setFormData({...formData, rate_carousel: e.target.value})} />
+                <CurrencyInput label="Rate Carousel" min="0" value={formData.rate_carousel} onChange={e => setFormData({...formData, rate_carousel: e.target.value})} />
                 <Input label="Qty Carousel" type="number" min="0" value={formData.qty_carousel} onChange={e => setFormData({...formData, qty_carousel: e.target.value})} />
-                <Input label="Rate Reels" type="number" min="0" value={formData.rate_reels} onChange={e => setFormData({...formData, rate_reels: e.target.value})} />
+                <CurrencyInput label="Rate Reels" min="0" value={formData.rate_reels} onChange={e => setFormData({...formData, rate_reels: e.target.value})} />
                 <Input label="Qty Reels" type="number" min="0" value={formData.qty_reels} onChange={e => setFormData({...formData, qty_reels: e.target.value})} />
               </div>
             ) : (
               <div>
-                <Input label="Fixed Amount *" type="number" min="0" required value={formData.fixed_amount} onChange={e => setFormData({...formData, fixed_amount: e.target.value})} />
+                <CurrencyInput label="Fixed Amount *" min="0" required value={formData.fixed_amount} onChange={e => setFormData({...formData, fixed_amount: e.target.value})} />
                 <p className="text-xs text-gray-500 mt-1">Enter the agreed flat fee in Rupiah</p>
               </div>
             )}

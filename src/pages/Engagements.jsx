@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { Briefcase, Plus, Search, Pencil, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { useEngagements, useCreateEngagement, useUpdateEngagement, useDeleteEngagement } from '../lib/queries/engagements';
+import { useEngagements, useCreateEngagement, useCreateEngagementsBulk, useUpdateEngagement, useDeleteEngagement } from '../lib/queries/engagements';
 import { useClients } from '../lib/queries/clients';
 import { useServices } from '../lib/queries/services';
 import { PageHeader } from '../components/ui/PageHeader';
@@ -11,6 +11,7 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { DataTable } from '../components/ui/DataTable';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
+import { CurrencyInput } from '../components/ui/CurrencyInput';
 import { Select } from '../components/ui/Select';
 import { Textarea } from '../components/ui/Textarea';
 import { Badge } from '../components/ui/Badge';
@@ -22,6 +23,7 @@ export default function Engagements() {
   const { data: services, isLoading: servicesLoading } = useServices();
 
   const createEngagement = useCreateEngagement();
+  const createEngagementsBulk = useCreateEngagementsBulk();
   const updateEngagement = useUpdateEngagement();
   const deleteEngagement = useDeleteEngagement();
 
@@ -38,6 +40,8 @@ export default function Engagements() {
     client_id: '',
     service_id: '',
     service_fee_per_month: 0,
+    selected_service_ids: [],
+    service_fees: {},
     start_date: format(new Date(), 'yyyy-MM-dd'),
     finish_date: '',
     status: 'ongoing',
@@ -81,8 +85,10 @@ export default function Engagements() {
     setEditingEngagement(null);
     setFormData({
       client_id: clients?.[0]?.id || '',
-      service_id: services?.[0]?.id || '',
+      service_id: '',
       service_fee_per_month: 0,
+      selected_service_ids: [],
+      service_fees: {},
       start_date: format(new Date(), 'yyyy-MM-dd'),
       finish_date: '',
       status: 'ongoing',
@@ -101,6 +107,8 @@ export default function Engagements() {
       client_id: eng.client_id || '',
       service_id: eng.service_id || '',
       service_fee_per_month: eng.service_fee_per_month || 0,
+      selected_service_ids: [eng.service_id].filter(Boolean),
+      service_fees: { [eng.service_id]: eng.service_fee_per_month || 0 },
       start_date: eng.start_date || format(new Date(), 'yyyy-MM-dd'),
       finish_date: eng.finish_date || '',
       status: eng.status || 'ongoing',
@@ -116,14 +124,18 @@ export default function Engagements() {
     e.preventDefault();
     setFormError('');
 
-    if (!formData.client_id || !formData.service_id || !formData.start_date || !formData.status) {
+    const selectedServiceIds = editingEngagement ? [formData.service_id].filter(Boolean) : formData.selected_service_ids;
+    if (!formData.client_id || selectedServiceIds.length === 0 || !formData.start_date || !formData.status) {
       setFormError('Please fill out all required fields.');
       return;
     }
 
-    const fee = parseInt(formData.service_fee_per_month, 10);
-    if (isNaN(fee) || fee < 0) {
-      setFormError('Service fee must be zero or a positive number.');
+    const fees = selectedServiceIds.map((serviceId) => ({
+      serviceId,
+      fee: parseInt(editingEngagement ? formData.service_fee_per_month : formData.service_fees[serviceId], 10),
+    }));
+    if (fees.some(({ fee }) => Number.isNaN(fee) || fee < 0)) {
+      setFormError('Nominal service harus nol atau angka positif.');
       return;
     }
 
@@ -133,16 +145,36 @@ export default function Engagements() {
     }
 
     try {
-      const payload = {
-        ...formData,
-        service_fee_per_month: fee,
-        finish_date: formData.finish_date || null
-      };
-
       if (editingEngagement) {
+        const payload = {
+          client_id: formData.client_id,
+          service_id: formData.service_id,
+          service_fee_per_month: fees[0].fee,
+          start_date: formData.start_date,
+          finish_date: formData.finish_date || null,
+          status: formData.status,
+          qtn_url: formData.qtn_url,
+          report_url: formData.report_url,
+          notes: formData.notes,
+        };
         await updateEngagement.mutateAsync({ id: editingEngagement.id, ...payload });
       } else {
-        await createEngagement.mutateAsync(payload);
+        const payloads = fees.map(({ serviceId, fee }) => ({
+          client_id: formData.client_id,
+          service_id: serviceId,
+          service_fee_per_month: fee,
+          start_date: formData.start_date,
+          finish_date: formData.finish_date || null,
+          status: formData.status,
+          qtn_url: formData.qtn_url,
+          report_url: formData.report_url,
+          notes: formData.notes,
+        }));
+        if (payloads.length === 1) {
+          await createEngagement.mutateAsync(payloads[0]);
+        } else {
+          await createEngagementsBulk.mutateAsync(payloads);
+        }
       }
       
       setIsModalOpen(false);
@@ -215,6 +247,20 @@ export default function Engagements() {
   }
 
   const selectedServiceObj = services?.find(s => s.id === formData.service_id);
+  const toggleService = (serviceId) => {
+    setFormData((previous) => {
+      const selected = previous.selected_service_ids.includes(serviceId);
+      return {
+        ...previous,
+        selected_service_ids: selected
+          ? previous.selected_service_ids.filter((id) => id !== serviceId)
+          : [...previous.selected_service_ids, serviceId],
+        service_fees: selected
+          ? Object.fromEntries(Object.entries(previous.service_fees).filter(([id]) => id !== serviceId))
+          : { ...previous.service_fees, [serviceId]: 0 },
+      };
+    });
+  };
 
   return (
     <>
@@ -314,7 +360,7 @@ export default function Engagements() {
         footer={
           <>
             <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-            <Button type="button" onClick={handleSubmit} disabled={createEngagement.isPending || updateEngagement.isPending}>
+            <Button type="button" onClick={handleSubmit} disabled={createEngagement.isPending || createEngagementsBulk.isPending || updateEngagement.isPending}>
               {editingEngagement ? "Update" : "Save"}
             </Button>
           </>
@@ -340,33 +386,67 @@ export default function Engagements() {
             />
           </div>
 
-          <div className="w-full">
-            <Select 
-              label="Service *" 
-              required
-              value={formData.service_id}
-              onChange={e => setFormData({...formData, service_id: e.target.value})}
-              options={[
-                { value: '', label: 'Select service...' },
-                ...(services?.map(s => ({ value: s.id, label: `${s.name} (${s.service_type === 'monthly' ? 'Monthly' : 'One-time'})` })) || [])
-              ]}
-            />
-          </div>
-
-          <div className="w-full">
-            <Input 
-              label={selectedServiceObj?.service_type === 'one_time' ? "Service Fee *" : "Service Fee per Month *"}
-              type="number"
-              min="0"
-              required 
-              value={formData.service_fee_per_month}
-              onChange={e => setFormData({...formData, service_fee_per_month: e.target.value})}
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              In Rupiah (e.g. 2000000) 
-              {formData.service_fee_per_month ? ` = Rp ${formatCurrency(parseInt(formData.service_fee_per_month, 10))}` : ''}
-            </p>
-          </div>
+          {editingEngagement ? (
+            <>
+              <div className="w-full">
+                <Select
+                  label="Service *"
+                  required
+                  value={formData.service_id}
+                  onChange={e => setFormData({ ...formData, service_id: e.target.value })}
+                  options={[
+                    { value: '', label: 'Select service...' },
+                    ...(services?.map(s => ({ value: s.id, label: `${s.name} (${s.service_type === 'monthly' ? 'Monthly' : 'One-time'})` })) || [])
+                  ]}
+                />
+              </div>
+              <CurrencyInput
+                label={selectedServiceObj?.service_type === 'one_time' ? 'Service Fee *' : 'Service Fee per Month *'}
+                min="0"
+                required
+                value={formData.service_fee_per_month}
+                onChange={e => setFormData({ ...formData, service_fee_per_month: e.target.value })}
+              />
+            </>
+          ) : (
+            <div className="w-full">
+              <p className="block text-sm font-medium text-gray-700 mb-1.5">Service * <span className="text-red-500">(pilih satu atau beberapa)</span></p>
+              <div className="space-y-2 rounded-md border border-gray-300 bg-gray-50 p-3 max-h-56 overflow-y-auto">
+                {(services || []).map((service) => {
+                  const checked = formData.selected_service_ids.includes(service.id);
+                  return (
+                    <div key={service.id} className="rounded-md border border-gray-200 bg-white p-2.5">
+                      <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-800">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleService(service.id)}
+                          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span>{service.name}</span>
+                        <span className="text-xs text-gray-500">({service.service_type === 'monthly' ? 'Monthly' : 'One-time'})</span>
+                      </label>
+                      {checked && (
+                        <CurrencyInput
+                          className="mt-2"
+                          label={service.service_type === 'one_time' ? 'Nominal service' : 'Nominal per bulan'}
+                          min="0"
+                          required
+                          value={formData.service_fees[service.id] ?? 0}
+                          onChange={(event) => setFormData((previous) => ({
+                            ...previous,
+                            service_fees: { ...previous.service_fees, [service.id]: event.target.value },
+                          }))}
+                        />
+                      )}
+                    </div>
+                  );
+                })}
+                {services?.length === 0 && <p className="text-sm text-gray-500">Belum ada service. Tambahkan service terlebih dahulu.</p>}
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Setiap service yang dicentang akan dibuat sebagai satu project untuk client yang sama.</p>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <Input 

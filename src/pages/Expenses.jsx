@@ -24,6 +24,7 @@ import { StatCard } from '../components/ui/StatCard';
 import { DataTable } from '../components/ui/DataTable';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
+import { CurrencyInput } from '../components/ui/CurrencyInput';
 import { Select } from '../components/ui/Select';
 import { Textarea } from '../components/ui/Textarea';
 import { Badge } from '../components/ui/Badge';
@@ -485,7 +486,7 @@ export default function Expenses() {
               <Input label="Keterangan *" required placeholder="Meta Ads, domain, tools..." value={formData.title} onChange={(event) => setFormData({ ...formData, title: event.target.value })} />
               <div className="grid gap-4 sm:grid-cols-2">
                 <Select label="Kategori" value={formData.category} onChange={(event) => setFormData({ ...formData, category: event.target.value })} options={categoryOptions} />
-                <Input label="Nominal *" type="number" min="1" required value={formData.amount} onChange={(event) => setFormData({ ...formData, amount: event.target.value })} />
+                <CurrencyInput label="Nominal *" min="1" required value={formData.amount} onChange={(event) => setFormData({ ...formData, amount: event.target.value })} />
               </div>
               <Input
                 label="Tanggal PT bayar *"
@@ -503,7 +504,7 @@ export default function Expenses() {
               <Input label="Keterangan *" required placeholder="Langganan tools, iklan Ilusa, biaya kantor..." value={formData.title} onChange={(event) => setFormData({ ...formData, title: event.target.value })} />
               <div className="grid gap-4 sm:grid-cols-2">
                 <Select label="Kategori" value={formData.category} onChange={(event) => setFormData({ ...formData, category: event.target.value })} options={categoryOptions} />
-                <Input label="Nominal *" type="number" min="1" required value={formData.amount} onChange={(event) => setFormData({ ...formData, amount: event.target.value })} />
+                <CurrencyInput label="Nominal *" min="1" required value={formData.amount} onChange={(event) => setFormData({ ...formData, amount: event.target.value })} />
               </div>
               <Input
                 label="Tanggal bayar *"
@@ -522,7 +523,7 @@ export default function Expenses() {
               </div>
               <p className="text-xs text-gray-500">Fee freelancer dicatat sebagai biaya project, bukan piutang client.</p>
               <div className="grid gap-4 sm:grid-cols-2">
-                <Input label="Nominal *" type="number" min="1" required value={formData.amount} onChange={(event) => setFormData({ ...formData, amount: event.target.value })} />
+                <CurrencyInput label="Nominal *" min="1" required value={formData.amount} onChange={(event) => setFormData({ ...formData, amount: event.target.value })} />
                 <Select label="Status pembayaran" value={formData.status} onChange={(event) => setFormData({ ...formData, status: event.target.value })} options={[{ value: 'paid', label: 'Sudah dibayar' }, { value: 'pending', label: 'Belum dibayar' }]} />
               </div>
               <div className="grid gap-4 sm:grid-cols-2">

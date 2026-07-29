@@ -14,6 +14,7 @@ import { StatCard } from '../components/ui/StatCard';
 import { DataTable } from '../components/ui/DataTable';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
+import { CurrencyInput } from '../components/ui/CurrencyInput';
 import { Select } from '../components/ui/Select';
 import { Textarea } from '../components/ui/Textarea';
 import { Badge } from '../components/ui/Badge';
@@ -307,9 +308,8 @@ export default function Receivables() {
               onChange={(event) => setFormData({ ...formData, category: event.target.value })}
               options={categoryOptions}
             />
-            <Input
+            <CurrencyInput
               label="Nominal *"
-              type="number"
               min="1"
               required
               value={formData.amount}
