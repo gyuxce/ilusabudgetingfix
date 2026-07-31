@@ -423,38 +423,65 @@ export default function Invoices() {
             payment_percent: amounts[0].percent,
           }],
         };
-        await updateInvoice.mutateAsync({ id: editingInvoice.id, ...payload });
+        try {
+          await updateInvoice.mutateAsync({ id: editingInvoice.id, ...payload });
+        } catch (updateErr) {
+          if (/duplicate|unique|23505|invoice_number/i.test(updateErr.message)) {
+            setFormError('Nomor invoice sudah dipakai invoice lain. Ganti nomor atau hapus untuk generate otomatis.');
+            return;
+          }
+          throw updateErr;
+        }
       } else {
         const invoiceTotal = amounts.reduce((total, item) => total + item.amount, 0);
-        await createInvoice.mutateAsync({
-          engagement_id: selectedEngagementIds[0],
-          billing_month: formData.billing_month || (formData.issue_date ? formData.issue_date.slice(0, 7) : null),
-          period_month: formData.period_month || null,
-          invoice_number: formData.invoice_number.trim() || generateInvoiceNumber(formData.period_month || formData.issue_date, getNextInvoiceSequence(invoices)),
-          amount: invoiceTotal,
-          issue_date: formData.issue_date,
-          due_date: formData.due_date,
-          status: formData.status,
-          paid_date: null,
-          notes: formData.notes.trim() || null,
-          invoice_items: selectedEngagementIds.length > 1
-            ? amounts.map(({ engagementId, amount, terms, percent }) => ({
-                engagement_id: engagementId,
-                description: selectedEngagements.find((engagement) => engagement.id === engagementId)?.service?.name || null,
-                amount,
-                payment_terms: terms,
-                payment_percent: percent,
-              }))
-            : [{
-                engagement_id: selectedEngagementIds[0],
-                description: selectedEngagements[0]?.service?.name || null,
-                amount: invoiceTotal,
-                payment_terms: amounts[0].terms,
-                payment_percent: amounts[0].percent,
-              }],
-        });
+        const isAutoNumber = !formData.invoice_number.trim();
+        let attempt = 0;
+        const MAX_ATTEMPTS = 3;
+        let lastErr = null;
+        while (attempt < MAX_ATTEMPTS) {
+          const seqOffset = isAutoNumber ? attempt : 0;
+          const invoiceNumber = isAutoNumber
+            ? generateInvoiceNumber(formData.period_month || formData.issue_date, getNextInvoiceSequence(invoices, seqOffset))
+            : formData.invoice_number.trim();
+          try {
+            await createInvoice.mutateAsync({
+              engagement_id: selectedEngagementIds[0],
+              billing_month: formData.billing_month || (formData.issue_date ? formData.issue_date.slice(0, 7) : null),
+              period_month: formData.period_month || null,
+              invoice_number: invoiceNumber,
+              amount: invoiceTotal,
+              issue_date: formData.issue_date,
+              due_date: formData.due_date,
+              status: formData.status,
+              paid_date: null,
+              notes: formData.notes.trim() || null,
+              invoice_items: selectedEngagementIds.length > 1
+                ? amounts.map(({ engagementId, amount, terms, percent }) => ({
+                    engagement_id: engagementId,
+                    description: selectedEngagements.find((engagement) => engagement.id === engagementId)?.service?.name || null,
+                    amount,
+                    payment_terms: terms,
+                    payment_percent: percent,
+                  }))
+                : [{
+                    engagement_id: selectedEngagementIds[0],
+                    description: selectedEngagements[0]?.service?.name || null,
+                    amount: invoiceTotal,
+                    payment_terms: amounts[0].terms,
+                    payment_percent: amounts[0].percent,
+                  }],
+            });
+            lastErr = null;
+            break;
+          } catch (createErr) {
+            lastErr = createErr;
+            if (!isAutoNumber || !/duplicate|unique|23505|invoice_number/i.test(createErr.message)) break;
+            attempt += 1;
+          }
+        }
+        if (lastErr) throw lastErr;
       }
-      
+
       setIsModalOpen(false);
       showToast(editingInvoice ? 'Invoice updated!' : 'Invoice berhasil dibuat.');
     } catch (err) {

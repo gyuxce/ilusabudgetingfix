@@ -76,7 +76,8 @@ CREATE TABLE IF NOT EXISTS invoices (
     status text NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'approved', 'sent', 'paid')),
     notes text,
     created_at timestamptz NOT NULL DEFAULT now(),
-    updated_at timestamptz NOT NULL DEFAULT now()
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT invoices_invoice_number_unique UNIQUE (invoice_number)
 );
 
 -- ===== invoice_payments =====

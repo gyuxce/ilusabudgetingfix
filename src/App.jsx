@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
 import Login from './pages/Login';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 import Dashboard from './pages/Dashboard';
 import Clients from './pages/Clients';
@@ -18,10 +19,12 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
-      
+
       <Route path="/" element={
         <ProtectedRoute>
-          <Layout />
+          <ErrorBoundary>
+            <Layout />
+          </ErrorBoundary>
         </ProtectedRoute>
       }>
         <Route index element={<Dashboard />} />
