@@ -41,19 +41,51 @@ export function InvoiceDetailModal({ open, onClose, invoice, onRecordPayment }) 
         <p className="text-sm text-gray-500 font-medium">Invoice {invoice.invoice_number || '—'} · {formatPeriod(invoice.period_month)}</p>
       </div>
 
-      {invoiceItems.length > 1 && (
+      {invoiceItems.length > 1 ? (
         <div className="mb-6 rounded-md border border-gray-200 bg-gray-50 p-3">
           <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">Rincian layanan</p>
           <div className="space-y-2">
-            {invoiceItems.map((item) => (
-              <div key={item.id} className="flex items-center justify-between gap-3 text-sm">
-                <span className="text-gray-700">{item.description || item.engagement?.service?.name || 'Layanan'}</span>
-                <span className="font-medium text-gray-900">Rp {formatCurrency(item.amount)}</span>
-              </div>
-            ))}
+            {invoiceItems.map((item) => {
+              const coreLabel = item.engagement?.list_price_label || '';
+              const isFree = coreLabel.trim().toUpperCase() === 'FREE';
+              const hasPrice = /\d/.test(coreLabel);
+              return (
+                <div key={item.id} className="text-sm">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-gray-700">{item.description || item.engagement?.service?.name || 'Layanan'}</span>
+                    <span className="font-medium text-gray-900">Rp {formatCurrency(item.amount)}</span>
+                  </div>
+                  {(coreLabel || item.payment_terms || item.payment_percent != null) && (
+                    <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                      {coreLabel && (
+                        <span className={isFree ? 'text-emerald-700 font-semibold' : hasPrice ? 'line-through text-gray-400' : 'text-gray-500'}>
+                          {coreLabel}
+                        </span>
+                      )}
+                      {item.payment_terms && <span>· {item.payment_terms}</span>}
+                      {item.payment_percent != null && <span>· {Number(item.payment_percent)}%</span>}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
-      )}
+      ) : (() => {
+        const coreLabel = invoiceItems[0]?.engagement?.list_price_label || invoice.engagement?.list_price_label || '';
+        const isFree = coreLabel.trim().toUpperCase() === 'FREE';
+        const hasPrice = /\d/.test(coreLabel);
+        if (!coreLabel) return null;
+        return (
+          <div className="mb-4 flex items-center gap-2 rounded-md border border-gray-200 bg-gray-50 p-2 text-xs">
+            <span className="font-semibold uppercase tracking-wider text-gray-500">Harga Coret</span>
+            <span className={isFree ? 'text-emerald-700 font-semibold' : hasPrice ? 'line-through text-gray-400' : 'text-gray-700'}>
+              {coreLabel}
+            </span>
+            {isFree && <span className="ml-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">Subscriber</span>}
+          </div>
+        );
+      })()}
 
       <div className="grid grid-cols-2 gap-4 mb-6">
         <div>

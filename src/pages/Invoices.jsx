@@ -210,6 +210,26 @@ export default function Invoices() {
   }, [invoices, filterBillingMonth, filterPeriod, filterStatus, filterClient, search]);
 
   const formatCurrency = (val) => new Intl.NumberFormat('id-ID').format(val || 0);
+
+  const renderCoreBadge = (label) => {
+    if (!label) return null;
+    const isFree = label.trim().toUpperCase() === 'FREE';
+    const hasPrice = /\d/.test(label);
+    return (
+      <span
+        className={`ml-1 inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold ${
+          isFree
+            ? 'bg-emerald-50 text-emerald-700'
+            : hasPrice
+              ? 'bg-gray-100 text-gray-400 line-through'
+              : 'bg-gray-100 text-gray-600'
+        }`}
+        title="Harga coret dari project (otomatis sinkron)"
+      >
+        {label}
+      </span>
+    );
+  };
   const unpaidDownloadQueue = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -1283,6 +1303,7 @@ td { border-bottom: 1px solid #e5e7eb; padding: 11px 8px; vertical-align: top; }
                           />
                           <span>{engagement.service?.name || 'Service'}</span>
                           <span className="text-xs text-gray-500">({engagement.service?.service_type === 'monthly' ? 'Monthly' : 'One-time'})</span>
+                          {renderCoreBadge(engagement.list_price_label)}
                         </label>
                         {checked && (
                           <div className="mt-2 space-y-2">
@@ -1376,6 +1397,14 @@ td { border-bottom: 1px solid #e5e7eb; padding: 11px 8px; vertical-align: top; }
                 value={formData.amount}
                 onChange={e => setFormData({...formData, amount: e.target.value})}
               />
+              {(() => {
+                const eng = engagements?.find((e) => e.id === formData.engagement_id);
+                return eng?.list_price_label ? (
+                  <p className="mt-1.5 text-xs text-gray-500">
+                    Harga Coret dari project: {renderCoreBadge(eng.list_price_label)}
+                  </p>
+                ) : null;
+              })()}
               <div className="mt-2 grid grid-cols-2 gap-2">
                 <Input
                   label="Term (opsional)"
