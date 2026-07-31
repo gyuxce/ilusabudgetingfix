@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { FileText, Plus, Calendar, Pencil, Trash2, CreditCard, Search, Download, Check } from 'lucide-react';
+import { FileText, Plus, Calendar, Pencil, Trash2, CreditCard, Search, Download, Check, MoreVertical, Send } from 'lucide-react';
 import { addMonths, differenceInDays, format, subMonths } from 'date-fns';
 import { useSearchParams } from 'react-router-dom';
 import { useInvoices, useCreateInvoice, useCreateInvoicesBulk, useUpdateInvoice, useDeleteInvoice, useSetInvoiceStatus } from '../lib/queries/invoices';
@@ -18,6 +18,7 @@ import { CurrencyInput } from '../components/ui/CurrencyInput';
 import { Select } from '../components/ui/Select';
 import { Textarea } from '../components/ui/Textarea';
 import { Badge } from '../components/ui/Badge';
+import { ActionsMenu } from '../components/ui/ActionsMenu';
 import { InvoiceDetailModal } from '../components/InvoiceDetailModal';
 import { RecordPaymentModal } from '../components/RecordPaymentModal';
 import { AnimatedNumber } from '../components/ui/AnimatedNumber';
@@ -805,22 +806,38 @@ export default function Invoices() {
   // --- Columns ---
   const columns = [
     { key: 'invoice_number', label: 'Invoice #', render: (row) => row.invoice_number ? <span className="font-medium text-gray-900">{row.invoice_number}</span> : <span className="text-gray-400">—</span> },
-    { key: 'client', label: 'Client', render: (row) => <span className="font-medium text-gray-900">{row.engagement?.client?.company_name || '—'}</span> },
-    { key: 'service', label: 'Layanan', render: (row) => row.invoice_items?.length > 1
-      ? <span className="text-sm text-gray-600">{row.invoice_items.length} layanan</span>
-      : <span className="text-sm text-gray-600">{row.engagement?.service?.name || '—'}</span> },
+    { key: 'client', label: 'Client', render: (row) => (
+      <span className="block max-w-[180px] truncate font-medium text-gray-900" title={row.engagement?.client?.company_name}>
+        {row.engagement?.client?.company_name || '—'}
+      </span>
+    ) },
+    { key: 'service', label: 'Layanan', render: (row) => {
+      if (row.invoice_items?.length > 1) {
+        return <span className="block max-w-[160px] truncate text-sm text-gray-600">{row.invoice_items.length} layanan</span>;
+      }
+      const serviceName = row.engagement?.service?.name;
+      return (
+        <span className="block max-w-[160px] truncate text-sm text-gray-600" title={serviceName}>
+          {serviceName || '—'}
+        </span>
+      );
+    }},
     { key: 'billing_month', label: 'Bulan Penagihan', render: (row) => formatPeriod(row.effective_billing_month || row.billing_month) },
     { key: 'period', label: 'Bulan Pekerjaan', render: (row) => formatPeriod(row.period_month) },
     { key: 'amount', label: 'Nilai', render: (row) => <span className="font-medium">Rp {formatCurrency(row.amount)}</span> },
-    { key: 'paid_total', label: 'Dibayar / Total', render: (row) => {
+    { key: 'paid_total', label: 'Bayar / Nilai', render: (row) => {
         const totalPaid = row.total_paid || 0;
         const amount = row.amount || 0;
-        if (row.computed_status === 'paid') {
-          return <span className="text-slate-700 font-medium">Rp {formatCurrency(totalPaid)}</span>;
-        } else if (row.computed_status === 'partial') {
-          return <span className="text-amber-700 font-medium">Rp {formatCurrency(totalPaid)} / Rp {formatCurrency(amount)}</span>;
-        }
-        return <span className="text-gray-500">Rp 0 / Rp {formatCurrency(amount)}</span>;
+        const paid = row.computed_status === 'paid';
+        const partial = row.computed_status === 'partial';
+        return (
+          <div className="leading-tight">
+            <div className={`font-medium ${paid ? 'text-slate-700' : partial ? 'text-amber-700' : 'text-gray-400'}`}>
+              Rp {formatCurrency(totalPaid)}
+            </div>
+            <div className="text-xs text-gray-400">/ Rp {formatCurrency(amount)}</div>
+          </div>
+        );
     }},
     { key: 'due_date', label: 'Jatuh Tempo', render: (row) => {
         if (!row.due_date) return '—';
@@ -840,32 +857,58 @@ export default function Invoices() {
       if (status === 'draft') return <Badge variant="neutral">Draft</Badge>;
       return <Badge variant="neutral">{status}</Badge>;
     }},
-    { key: 'actions', label: 'Actions', render: (row) => (
-      <div className="flex gap-1" onClick={e => e.stopPropagation()}>
-        {row.computed_status === 'draft' && (
-          <Button variant="ghost" size="sm" className="text-gray-700 hover:text-gray-950 hover:bg-gray-100" title="Approve Invoice" onClick={async (e) => { e.stopPropagation(); await setInvoiceStatus.mutateAsync({ id: row.id, status: 'approved' }); showToast('Invoice approved'); }}>
-            <Check size={14} />
-          </Button>
-        )}
-        {row.computed_status === 'approved' && (
-          <Button variant="ghost" size="sm" className="text-gray-700 hover:text-gray-950 hover:bg-gray-100" title="Mark as Sent" onClick={async (e) => { e.stopPropagation(); await setInvoiceStatus.mutateAsync({ id: row.id, status: 'sent' }); showToast('Invoice marked as sent'); }}>
-            <FileText size={14} />
-          </Button>
-        )}
-        <Button variant="ghost" size="sm" title="Download Invoice PDF" onClick={(e) => handleDownloadInvoice(row, e)}>
-          <Download size={14} />
-        </Button>
-        {row.computed_status !== 'paid' && row.computed_status !== 'draft' && (
-          <Button variant="ghost" size="sm" className="text-gray-700 hover:text-gray-950 hover:bg-gray-100" title="Record Payment" onClick={(e) => handleOpenPayment(row, e)}>
-            <CreditCard size={14} />
-          </Button>
-        )}
-        <Button variant="ghost" size="sm" title="Edit" onClick={(e) => handleOpenEdit(row, e)}>
-          <Pencil size={14} />
-        </Button>
-        <Button variant="ghost" size="sm" title="Delete" className="text-red-500 hover:text-red-600 hover:bg-red-50" onClick={(e) => handleDelete(row.id, e)}>
-          <Trash2 size={14} />
-        </Button>
+    { key: 'actions', label: 'Aksi', render: (row) => (
+      <div onClick={e => e.stopPropagation()}>
+        <ActionsMenu
+          trigger={<MoreVertical size={16} />}
+          items={[
+            ...(row.computed_status === 'draft' ? [{
+              key: 'approve',
+              label: 'Setujui Invoice',
+              icon: Check,
+              onClick: async () => {
+                await setInvoiceStatus.mutateAsync({ id: row.id, status: 'approved' });
+                showToast('Invoice approved');
+              }
+            }] : []),
+            ...(row.computed_status === 'approved' ? [{
+              key: 'send',
+              label: 'Tandai Sudah Dikirim',
+              icon: Send,
+              onClick: async () => {
+                await setInvoiceStatus.mutateAsync({ id: row.id, status: 'sent' });
+                showToast('Invoice marked as sent');
+              }
+            }] : []),
+            {
+              key: 'download',
+              label: 'Download PDF',
+              icon: Download,
+              onClick: (e) => handleDownloadInvoice(row, e)
+            },
+            ...(row.computed_status !== 'paid' && row.computed_status !== 'draft' ? [{
+              key: 'payment',
+              label: 'Catat Pembayaran',
+              icon: CreditCard,
+              onClick: (e) => handleOpenPayment(row, e)
+            }] : []),
+            { divider: true },
+            {
+              key: 'edit',
+              label: 'Edit',
+              icon: Pencil,
+              onClick: (e) => handleOpenEdit(row, e)
+            },
+            {
+              key: 'delete',
+              label: 'Hapus',
+              icon: Trash2,
+              iconClassName: 'text-red-500',
+              labelClassName: 'text-red-600',
+              onClick: (e) => handleDelete(row.id, e)
+            }
+          ]}
+        />
       </div>
     )}
   ];

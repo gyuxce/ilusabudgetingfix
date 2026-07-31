@@ -37,6 +37,7 @@ export default function Services() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingService, setEditingService] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
+  const [manualName, setManualName] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -56,6 +57,7 @@ export default function Services() {
     setEditingService(null);
     setFormData({ name: '', service_type: 'monthly', fee_type: 'fixed' });
     setFormError('');
+    setManualName(false);
     setIsModalOpen(true);
   };
 
@@ -68,6 +70,7 @@ export default function Services() {
       fee_type: service.fee_type || 'fixed'
     });
     setFormError('');
+    setManualName(!ILUSA_SERVICE_CATALOG.includes(service.name || ''));
     setIsModalOpen(true);
   };
 
@@ -206,22 +209,48 @@ export default function Services() {
             </div>
           )}
           <div>
-            <Select
-              label="Produk / Layanan Ilusa *"
-              required
-              value={formData.name}
-              onChange={e => setFormData({...formData, name: e.target.value})}
-              options={[
-                { value: '', label: 'Pilih produk atau layanan' },
-                ...(editingService && !ILUSA_SERVICE_CATALOG.includes(formData.name)
-                  ? [{ value: formData.name, label: `${formData.name} (data lama)` }]
-                  : []),
-                ...ILUSA_SERVICE_CATALOG.map(name => ({ value: name, label: name }))
-              ]}
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Pilih dari katalog produk Ilusa agar nama layanan tetap konsisten.
-            </p>
+            {manualName ? (
+              <>
+                <Input
+                  label="Nama Layanan *"
+                  required
+                  autoFocus
+                  maxLength={120}
+                  placeholder="Ketik nama layanan..."
+                  value={formData.name}
+                  onChange={e => setFormData({...formData, name: e.target.value})}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Memakai nama sendiri.{' '}
+                  <button type="button" className="text-blue-600 underline hover:text-blue-700" onClick={() => setManualName(false)}>
+                    Pilih dari katalog
+                  </button>
+                </p>
+              </>
+            ) : (
+              <>
+                <Select
+                  label="Produk / Layanan Ilusa *"
+                  required
+                  value={formData.name}
+                  onChange={e => setFormData({...formData, name: e.target.value})}
+                  options={[
+                    { value: '', label: 'Pilih produk atau layanan' },
+                    ...(editingService && !ILUSA_SERVICE_CATALOG.includes(formData.name)
+                      ? [{ value: formData.name, label: `${formData.name} (data lama)` }]
+                      : []),
+                    ...ILUSA_SERVICE_CATALOG.map(name => ({ value: name, label: name }))
+                  ]}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Pilih dari katalog produk Ilusa agar nama layanan tetap konsisten, atau{' '}
+                  <button type="button" className="text-blue-600 underline hover:text-blue-700" onClick={() => setManualName(true)}>
+                    ketik manual
+                  </button>
+                  .
+                </p>
+              </>
+            )}
           </div>
           <Select 
             label="Jenis Layanan"
