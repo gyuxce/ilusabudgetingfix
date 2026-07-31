@@ -644,7 +644,7 @@ export default function Invoices() {
       const coreRow = coreLabel
         ? `<tr class="core-label-row">
             <td colspan="2">${coreValue}</td>
-            <td class="right">${isFree ? '<span class="core-tag">Subscriber</span>' : ''}</td>
+            <td class="right"></td>
           </tr>`
         : '';
       const hasTerm = item.payment_terms || item.payment_percent != null;
@@ -682,7 +682,7 @@ export default function Invoices() {
             }
             .page {
               width: 210mm;
-              height: 297mm;
+              min-height: 297mm;
               margin: 0 auto;
               background: #fff;
               padding: 12mm 14mm;
@@ -789,7 +789,7 @@ td { border-bottom: 1px solid #e5e7eb; padding: 11px 8px; vertical-align: top; }
             }
             @media print {
               body { background: #fff; }
-              .page { margin: 0; box-shadow: none; overflow: hidden; }
+              .page { margin: 0; box-shadow: none; }
             }
           </style>
         </head>
@@ -822,20 +822,6 @@ td { border-bottom: 1px solid #e5e7eb; padding: 11px 8px; vertical-align: top; }
                 <h2>Ditagihkan Kepada</h2>
                 <strong>${escapeHtml(clientName)}</strong>
                 <p class="small muted">Invoice untuk ${invoiceItems.length} layanan</p>
-                ${(() => {
-                  const coreLabel = invoice.engagement?.list_price_label
-                    || invoiceItems.find((it) => it.engagement?.list_price_label)?.engagement?.list_price_label
-                    || '';
-                  if (!coreLabel) return '';
-                  const isFreeText = coreLabel.trim().toUpperCase() === 'FREE';
-                  const hasPrice = /\d/.test(coreLabel);
-                  const valueHtml = isFreeText
-                    ? `<strong>FREE</strong>`
-                    : hasPrice
-                      ? `<span class="core-strike">${escapeHtml(coreLabel)}</span>`
-                      : `<strong>${escapeHtml(coreLabel)}</strong>`;
-                  return `<p class="small" style="margin-top:8px">${valueHtml}${isFreeText ? ' &middot; <span class="core-tag">Subscriber</span>' : ''}</p>`;
-                })()}
             </div>
 <div class="box balance">
                 <h2>Total Tagihan</h2>
