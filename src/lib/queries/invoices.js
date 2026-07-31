@@ -14,6 +14,7 @@ export function useInvoices() {
             engagement:engagements(
               id,
               service_fee_per_month,
+              list_price_label,
               client:clients(id, company_name),
               service:services(id, name)
             )
@@ -29,6 +30,7 @@ export function useInvoices() {
             amount,
             engagement:engagements(
               id,
+              list_price_label,
               client:clients(id, company_name),
               service:services(id, name, service_type)
             )
@@ -62,12 +64,12 @@ export function useInvoice(id) {
       const [invoiceResult, itemResult] = await Promise.all([
         supabase
           .from('invoices_with_payments')
-          .select('*, engagement:engagements(id, service_fee_per_month, client:clients(id, company_name), service:services(id, name))')
+          .select('*, engagement:engagements(id, service_fee_per_month, list_price_label, client:clients(id, company_name), service:services(id, name))')
           .eq('id', id)
           .single(),
         supabase
           .from('invoice_items')
-          .select('id, invoice_id, engagement_id, description, amount, engagement:engagements(id, client:clients(id, company_name), service:services(id, name, service_type))')
+          .select('id, invoice_id, engagement_id, description, amount, engagement:engagements(id, list_price_label, client:clients(id, company_name), service:services(id, name, service_type))')
           .eq('invoice_id', id)
           .order('created_at', { ascending: true }),
       ]);

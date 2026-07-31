@@ -51,6 +51,7 @@ CREATE TABLE IF NOT EXISTS engagements (
     client_id uuid NOT NULL REFERENCES clients(id) ON DELETE RESTRICT,
     service_id uuid NOT NULL REFERENCES services(id) ON DELETE RESTRICT,
     service_fee_per_month integer NOT NULL DEFAULT 0,
+    list_price_label text,
     start_date date NOT NULL,
     finish_date date,
     status text NOT NULL DEFAULT 'ongoing' CHECK (status IN ('ongoing', 'finished', 'hold')),

@@ -40,8 +40,10 @@ export default function Engagements() {
     client_id: '',
     service_id: '',
     service_fee_per_month: 0,
+    list_price_label: '',
     selected_service_ids: [],
     service_fees: {},
+    list_price_labels: {},
     start_date: format(new Date(), 'yyyy-MM-dd'),
     finish_date: '',
     status: 'ongoing',
@@ -92,8 +94,10 @@ export default function Engagements() {
       client_id: clients?.[0]?.id || '',
       service_id: '',
       service_fee_per_month: 0,
+      list_price_label: '',
       selected_service_ids: [],
       service_fees: {},
+      list_price_labels: {},
       start_date: format(new Date(), 'yyyy-MM-dd'),
       finish_date: '',
       status: 'ongoing',
@@ -112,8 +116,10 @@ export default function Engagements() {
       client_id: eng.client_id || '',
       service_id: eng.service_id || '',
       service_fee_per_month: eng.service_fee_per_month || 0,
+      list_price_label: eng.list_price_label || '',
       selected_service_ids: [eng.service_id].filter(Boolean),
       service_fees: { [eng.service_id]: eng.service_fee_per_month || 0 },
+      list_price_labels: { [eng.service_id]: eng.list_price_label || '' },
       start_date: eng.start_date || format(new Date(), 'yyyy-MM-dd'),
       finish_date: eng.finish_date || '',
       status: eng.status || 'ongoing',
@@ -138,6 +144,7 @@ export default function Engagements() {
     const fees = selectedServiceIds.map((serviceId) => ({
       serviceId,
       fee: parseInt(editingEngagement ? formData.service_fee_per_month : formData.service_fees[serviceId], 10),
+      label: editingEngagement ? formData.list_price_label : (formData.list_price_labels[serviceId] || ''),
     }));
     if (fees.some(({ fee }) => Number.isNaN(fee) || fee < 0)) {
       setFormError('Nominal service harus nol atau angka positif.');
@@ -155,6 +162,7 @@ export default function Engagements() {
           client_id: formData.client_id,
           service_id: formData.service_id,
           service_fee_per_month: fees[0].fee,
+          list_price_label: (fees[0].label || '').trim() || null,
           start_date: formData.start_date,
           finish_date: formData.finish_date || null,
           status: formData.status,
@@ -164,10 +172,11 @@ export default function Engagements() {
         };
         await updateEngagement.mutateAsync({ id: editingEngagement.id, ...payload });
       } else {
-        const payloads = fees.map(({ serviceId, fee }) => ({
+        const payloads = fees.map(({ serviceId, fee, label }) => ({
           client_id: formData.client_id,
           service_id: serviceId,
           service_fee_per_month: fee,
+          list_price_label: (label || '').trim() || null,
           start_date: formData.start_date,
           finish_date: formData.finish_date || null,
           status: formData.status,
@@ -219,6 +228,7 @@ export default function Engagements() {
       ) : '—'
     )},
     { key: 'fee', label: 'Nilai/Bulan', render: (row) => row.service_fee_per_month > 0 ? `Rp ${formatCurrency(row.service_fee_per_month)}` : '—' },
+    { key: 'list_price', label: 'Harga Core', render: (row) => row.list_price_label ? <span className="text-gray-600">{row.list_price_label}</span> : <span className="text-gray-400">—</span> },
     { key: 'start', label: 'Mulai', render: (row) => row.start_date ? format(new Date(row.start_date), 'dd MMM yyyy') : '—' },
     { key: 'status', label: 'Status', render: (row) => {
       if (row.status === 'ongoing') return <Badge variant="success">Berjalan</Badge>;
@@ -263,6 +273,9 @@ export default function Engagements() {
         service_fees: selected
           ? Object.fromEntries(Object.entries(previous.service_fees).filter(([id]) => id !== serviceId))
           : { ...previous.service_fees, [serviceId]: 0 },
+        list_price_labels: selected
+          ? Object.fromEntries(Object.entries(previous.list_price_labels).filter(([id]) => id !== serviceId))
+          : { ...previous.list_price_labels, [serviceId]: '' },
       };
     });
   };
@@ -412,6 +425,14 @@ export default function Engagements() {
                 value={formData.service_fee_per_month}
                 onChange={e => setFormData({ ...formData, service_fee_per_month: e.target.value })}
               />
+              <Input
+                label="Harga Core (opsional)"
+                placeholder="Misal: FREE, Rp 2.500.000, atau See contract"
+                maxLength={60}
+                value={formData.list_price_label}
+                onChange={e => setFormData({ ...formData, list_price_label: e.target.value })}
+              />
+              <p className="-mt-2 text-xs text-gray-500">Tampil di invoice sebagai nilai/relationship value. Tidak mengubah nominal ditagih.</p>
             </>
           ) : (
             <div className="w-full">
@@ -441,6 +462,19 @@ export default function Engagements() {
                           onChange={(event) => setFormData((previous) => ({
                             ...previous,
                             service_fees: { ...previous.service_fees, [service.id]: event.target.value },
+                          }))}
+                        />
+                      )}
+                      {checked && (
+                        <Input
+                          className="mt-2"
+                          label="Harga Core (opsional)"
+                          placeholder="Misal: FREE, Rp 2.500.000"
+                          maxLength={60}
+                          value={formData.list_price_labels[service.id] ?? ''}
+                          onChange={(event) => setFormData((previous) => ({
+                            ...previous,
+                            list_price_labels: { ...previous.list_price_labels, [service.id]: event.target.value },
                           }))}
                         />
                       )}
