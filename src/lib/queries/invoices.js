@@ -28,6 +28,8 @@ export function useInvoices() {
             engagement_id,
             description,
             amount,
+            payment_terms,
+            payment_percent,
             engagement:engagements(
               id,
               list_price_label,
@@ -69,7 +71,7 @@ export function useInvoice(id) {
           .single(),
         supabase
           .from('invoice_items')
-          .select('id, invoice_id, engagement_id, description, amount, engagement:engagements(id, list_price_label, client:clients(id, company_name), service:services(id, name, service_type))')
+          .select('id, invoice_id, engagement_id, description, amount, payment_terms, payment_percent, engagement:engagements(id, list_price_label, client:clients(id, company_name), service:services(id, name, service_type))')
           .eq('invoice_id', id)
           .order('created_at', { ascending: true }),
       ]);
@@ -151,7 +153,7 @@ export function useCreateInvoicesBulk() {
 export function useUpdateInvoice() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...updateData }) => {
+    mutationFn: async ({ id, invoice_items: invoiceItems = [], ...updateData }) => {
       const { data, error } = await supabase
         .from('invoices')
         .update(updateData)
@@ -159,6 +161,16 @@ export function useUpdateInvoice() {
         .select()
         .single();
       if (error) throw new Error(error.message);
+      if (invoiceItems.length > 0) {
+        await Promise.all(invoiceItems.map((item) => supabase
+          .from('invoice_items')
+          .update({
+            payment_terms: item.payment_terms,
+            payment_percent: item.payment_percent,
+          })
+          .eq('invoice_id', id)
+          .eq('engagement_id', item.engagement_id)));
+      }
       await logAudit('invoice.updated', 'invoice', data.id, updateData);
       return data;
     },

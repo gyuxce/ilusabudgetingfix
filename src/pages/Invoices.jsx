@@ -120,6 +120,8 @@ export default function Invoices() {
     engagement_id: '',
     engagement_ids: [],
     amounts: {},
+    terms: {},
+    percents: {},
     billing_month: defaultBillingMonth,
     period_month: defaultServicePeriod,
     invoice_number: '',
@@ -127,7 +129,6 @@ export default function Invoices() {
     issue_date: defaultIssueDate,
     due_date: defaultDueDate,
     status: 'draft',
-    payment_terms: '',
     notes: ''
   });
   const [formError, setFormError] = useState('');
@@ -235,6 +236,8 @@ export default function Invoices() {
       engagement_id: firstEngagement?.id || '',
       engagement_ids: firstEngagement ? [firstEngagement.id] : [],
       amounts: firstEngagement ? { [firstEngagement.id]: firstEngagement.service_fee_per_month || 0 } : {},
+      terms: firstEngagement ? { [firstEngagement.id]: '' } : {},
+      percents: firstEngagement ? { [firstEngagement.id]: '' } : {},
       billing_month: defaultBillingMonth,
       period_month: defaultServicePeriod,
       invoice_number: generateInvoiceNumber(defaultServicePeriod, getNextInvoiceSequence(invoices)),
@@ -242,7 +245,6 @@ export default function Invoices() {
       issue_date: defaultIssueDate,
       due_date: defaultDueDate,
       status: 'draft',
-      payment_terms: '',
       notes: ''
     });
     setFormError('');
@@ -257,6 +259,8 @@ export default function Invoices() {
       engagement_id: inv.engagement_id || '',
       engagement_ids: [inv.engagement_id].filter(Boolean),
       amounts: { [inv.engagement_id]: inv.amount || 0 },
+      terms: { [inv.engagement_id]: inv.invoice_items?.find((it) => it.engagement_id === inv.engagement_id)?.payment_terms || '' },
+      percents: { [inv.engagement_id]: inv.invoice_items?.find((it) => it.engagement_id === inv.engagement_id)?.payment_percent ?? '' },
       billing_month: inv.effective_billing_month || inv.billing_month || (inv.issue_date ? inv.issue_date.slice(0, 7) : defaultBillingMonth),
       period_month: inv.period_month || '',
       invoice_number: inv.invoice_number || '',
@@ -264,7 +268,6 @@ export default function Invoices() {
       issue_date: inv.issue_date || defaultIssueDate,
       due_date: inv.due_date || defaultDueDate,
       status: (inv.status === 'paid' ? 'sent' : (inv.status || 'draft')),
-      payment_terms: inv.payment_terms || '',
       notes: inv.notes || ''
     });
     setFormError('');
@@ -281,6 +284,8 @@ export default function Invoices() {
       engagement_id: firstEngagement?.id || '',
       engagement_ids: firstEngagement ? [firstEngagement.id] : [],
       amounts: firstEngagement ? { [firstEngagement.id]: firstEngagement.service_fee_per_month || 0 } : {},
+      terms: firstEngagement ? { [firstEngagement.id]: '' } : {},
+      percents: firstEngagement ? { [firstEngagement.id]: '' } : {},
       amount: firstEngagement?.service_fee_per_month || 0,
     }));
   };
@@ -297,7 +302,34 @@ export default function Invoices() {
         amounts: isSelected
           ? Object.fromEntries(Object.entries(previous.amounts).filter(([id]) => id !== engagementId))
           : { ...previous.amounts, [engagementId]: engagement?.service_fee_per_month || 0 },
+        terms: isSelected
+          ? Object.fromEntries(Object.entries(previous.terms || {}).filter(([id]) => id !== engagementId))
+          : { ...(previous.terms || {}), [engagementId]: '' },
+        percents: isSelected
+          ? Object.fromEntries(Object.entries(previous.percents || {}).filter(([id]) => id !== engagementId))
+          : { ...(previous.percents || {}), [engagementId]: '' },
       };
+    });
+  };
+
+  const handleItemTermsChange = (engagementId, value) => {
+    setFormData((prev) => ({ ...prev, terms: { ...(prev.terms || {}), [engagementId]: value } }));
+  };
+
+  const handleItemPercentChange = (engagementId, value) => {
+    setFormData((prev) => {
+      const engagement = engagements?.find((e) => e.id === engagementId);
+      const base = engagement?.service_fee_per_month || 0;
+      const parsed = value === '' ? '' : parseFloat(value);
+      const percents = { ...(prev.percents || {}), [engagementId]: value };
+      let amounts = { ...(prev.amounts || {}) };
+      if (value === '' || Number.isNaN(parsed)) {
+        amounts[engagementId] = base;
+      } else {
+        const clamped = Math.max(0, Math.min(100, parsed));
+        amounts[engagementId] = Math.round((base * clamped) / 100);
+      }
+      return { ...prev, percents, amounts };
     });
   };
 
@@ -326,9 +358,17 @@ export default function Invoices() {
     const amounts = selectedEngagementIds.map((engagementId) => ({
       engagementId,
       amount: parseInt(editingInvoice ? formData.amount : formData.amounts[engagementId], 10),
+      terms: (formData.terms?.[engagementId] || '').trim() || null,
+      percent: formData.percents?.[engagementId] === '' || formData.percents?.[engagementId] == null
+        ? null
+        : Math.max(0, Math.min(100, parseFloat(formData.percents[engagementId]))),
     }));
     if (amounts.some(({ amount }) => Number.isNaN(amount) || amount < 0)) {
       setFormError('Nominal invoice harus nol atau angka positif.');
+      return;
+    }
+    if (amounts.some(({ percent }) => percent != null && (Number.isNaN(percent) || percent < 0 || percent > 100))) {
+      setFormError('Persentase pembayaran harus di antara 0 dan 100.');
       return;
     }
 
@@ -356,8 +396,12 @@ export default function Invoices() {
           issue_date: formData.issue_date,
           due_date: formData.due_date,
           status: formData.status,
-          payment_terms: (formData.payment_terms || '').trim() || null,
           notes: formData.notes.trim() || null,
+          invoice_items: [{
+            engagement_id: formData.engagement_id,
+            payment_terms: amounts[0].terms,
+            payment_percent: amounts[0].percent,
+          }],
         };
         await updateInvoice.mutateAsync({ id: editingInvoice.id, ...payload });
       } else {
@@ -371,16 +415,23 @@ export default function Invoices() {
           issue_date: formData.issue_date,
           due_date: formData.due_date,
           status: formData.status,
-          payment_terms: (formData.payment_terms || '').trim() || null,
           paid_date: null,
           notes: formData.notes.trim() || null,
           invoice_items: selectedEngagementIds.length > 1
-            ? amounts.map(({ engagementId, amount }) => ({
+            ? amounts.map(({ engagementId, amount, terms, percent }) => ({
                 engagement_id: engagementId,
                 description: selectedEngagements.find((engagement) => engagement.id === engagementId)?.service?.name || null,
                 amount,
+                payment_terms: terms,
+                payment_percent: percent,
               }))
-            : [],
+            : [{
+                engagement_id: selectedEngagementIds[0],
+                description: selectedEngagements[0]?.service?.name || null,
+                amount: invoiceTotal,
+                payment_terms: amounts[0].terms,
+                payment_percent: amounts[0].percent,
+              }],
         });
       }
       
@@ -576,11 +627,21 @@ export default function Invoices() {
             <td class="right">${isFree ? '<span class="core-tag">Subscriber</span>' : ''}</td>
           </tr>`
         : '';
+      const hasTerm = item.payment_terms || item.payment_percent != null;
+      const termBits = [];
+      if (item.payment_terms) termBits.push(escapeHtml(item.payment_terms));
+      if (item.payment_percent != null) termBits.push(`${Number(item.payment_percent)}%`);
+      const termRow = hasTerm
+        ? `<tr class="term-row">
+            <td colspan="2"><span class="core-label">Pembayaran</span> <strong>${termBits.join(' · ')}</strong></td>
+            <td class="right"></td>
+          </tr>`
+        : '';
       return `<tr>
         <td><strong>${escapeHtml(itemServiceName)}</strong></td>
         <td>${escapeHtml(itemPeriod)}</td>
         <td class="right"><strong>Rp ${formatCurrency(item.amount || 0)}</strong></td>
-      </tr>${coreRow}`;
+      </tr>${coreRow}${termRow}`;
     }).join('');
 
     return `<!doctype html>
@@ -677,6 +738,8 @@ td { border-bottom: 1px solid #e5e7eb; padding: 11px 8px; vertical-align: top; }
 .right { text-align: right; }
 .core-label-row { background: #f9fafb; }
 .core-label-row td { padding: 6px 8px; border-bottom: 1px solid #f1f5f9; font-size: 11px; color: #4b5563; }
+.term-row { background: #f0f9ff; }
+.term-row td { padding: 6px 8px; border-bottom: 1px solid #e0f2fe; font-size: 11px; color: #0369a1; }
 .core-strike { text-decoration: line-through; color: #94a3b8; font-weight: 600; }
 .core-label { color: #9ca3af; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 600; }
 .core-tag { display: inline-block; padding: 2px 8px; border-radius: 999px; background: #ecfdf5; color: #047857; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; }
@@ -757,7 +820,6 @@ td { border-bottom: 1px solid #e5e7eb; padding: 11px 8px; vertical-align: top; }
 <div class="box balance">
                 <h2>Total Tagihan</h2>
                 <strong>Rp ${formatCurrency(balance)}</strong>
-                ${invoice.payment_terms ? `<p class="small" style="margin-top:4px"><strong style="color:#111827">Pembayaran:</strong> ${escapeHtml(invoice.payment_terms)}</p>` : ''}
                 <p class="small muted">${escapeHtml(dueCopy)}</p>
               </div>
             </section>
@@ -1223,17 +1285,36 @@ td { border-bottom: 1px solid #e5e7eb; padding: 11px 8px; vertical-align: top; }
                           <span className="text-xs text-gray-500">({engagement.service?.service_type === 'monthly' ? 'Monthly' : 'One-time'})</span>
                         </label>
                         {checked && (
-                          <CurrencyInput
-                            className="mt-2"
-                            label="Nilai service"
-                            min="0"
-                            required
-                            value={formData.amounts[engagement.id] ?? 0}
-                            onChange={(event) => setFormData((previous) => ({
-                              ...previous,
-                              amounts: { ...previous.amounts, [engagement.id]: event.target.value },
-                            }))}
-                          />
+                          <div className="mt-2 space-y-2">
+                            <CurrencyInput
+                              label="Nilai Tagihan"
+                              min="0"
+                              required
+                              value={formData.amounts[engagement.id] ?? 0}
+                              onChange={(event) => setFormData((previous) => ({
+                                ...previous,
+                                amounts: { ...previous.amounts, [engagement.id]: event.target.value },
+                              }))}
+                            />
+                            <div className="grid grid-cols-2 gap-2">
+                              <Input
+                                label="Term (opsional)"
+                                placeholder="Misal: Term 1"
+                                value={formData.terms?.[engagement.id] || ''}
+                                onChange={(e) => handleItemTermsChange(engagement.id, e.target.value)}
+                              />
+                              <Input
+                                label="% (otomatis)"
+                                type="number"
+                                min="0"
+                                max="100"
+                                placeholder="Misal: 50"
+                                value={formData.percents?.[engagement.id] ?? ''}
+                                onChange={(e) => handleItemPercentChange(engagement.id, e.target.value)}
+                              />
+                            </div>
+                            <p className="text-xs text-gray-500">Isi % untuk auto-hitung Nilai Tagihan dari harga service ({formatCurrency(engagement.service_fee_per_month || 0)}). Bisa edit manual.</p>
+                          </div>
                         )}
                       </div>
                     );
@@ -1295,7 +1376,35 @@ td { border-bottom: 1px solid #e5e7eb; padding: 11px 8px; vertical-align: top; }
                 value={formData.amount}
                 onChange={e => setFormData({...formData, amount: e.target.value})}
               />
-              <p className="text-xs text-gray-500 mt-1">Terisi dari project, masih bisa diedit.</p>
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                <Input
+                  label="Term (opsional)"
+                  placeholder="Misal: Term 1"
+                  value={formData.terms?.[formData.engagement_id] || ''}
+                  onChange={(e) => handleItemTermsChange(formData.engagement_id, e.target.value)}
+                />
+                <Input
+                  label="% (otomatis)"
+                  type="number"
+                  min="0"
+                  max="100"
+                  placeholder="Misal: 50"
+                  value={formData.percents?.[formData.engagement_id] ?? ''}
+                  onChange={(e) => {
+                    const engagementId = formData.engagement_id;
+                    const engagement = engagements?.find((eng) => eng.id === engagementId);
+                    const base = engagement?.service_fee_per_month || parseInt(formData.amount, 10) || 0;
+                    const value = e.target.value;
+                    const parsed = value === '' ? '' : parseFloat(value);
+                    setFormData((prev) => ({
+                      ...prev,
+                      percents: { ...(prev.percents || {}), [engagementId]: value },
+                      amount: value === '' || Number.isNaN(parsed) ? base : Math.max(0, Math.min(100, parsed)) > 0 ? Math.round((base * Math.max(0, Math.min(100, parsed))) / 100) : 0,
+                    }));
+                  }}
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Isi % untuk auto-hitung Nilai Tagihan dari harga service. Term & % tampil per service di invoice PDF.</p>
             </div>
           )}
 
@@ -1331,28 +1440,6 @@ td { border-bottom: 1px solid #e5e7eb; padding: 11px 8px; vertical-align: top; }
               />
               <p className="text-xs text-gray-500 mt-1">Untuk mencatat uang masuk, gunakan tombol "Catat Pembayaran" setelah client membayar.</p>
             </div>
-          </div>
-
-          <div>
-            <Input
-              label="Term / Pembayaran (opsional)"
-              placeholder="Misal: Term 1 / DP 50%, atau Lunas"
-              value={formData.payment_terms}
-              onChange={e => setFormData({...formData, payment_terms: e.target.value})}
-            />
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {['Term 1 / DP 50%', 'Term 2 / Pelunasan 50%', 'Lunas', 'DP 30%'].map(preset => (
-                <button
-                  key={preset}
-                  type="button"
-                  onClick={() => setFormData({...formData, payment_terms: preset})}
-                  className="rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-[11px] text-gray-700 transition-colors hover:border-gray-950 hover:bg-gray-900 hover:text-white"
-                >
-                  {preset}
-                </button>
-              ))}
-            </div>
-            <p className="text-xs text-gray-500 mt-1.5">Tampil di PDF invoice. Klik preset atau ketik sendiri.</p>
           </div>
 
           <Textarea

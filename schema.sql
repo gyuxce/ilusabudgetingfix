@@ -74,7 +74,6 @@ CREATE TABLE IF NOT EXISTS invoices (
     due_date date NOT NULL,
     paid_date date,
     status text NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'approved', 'sent', 'paid')),
-    payment_terms text,
     notes text,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now()
@@ -98,6 +97,8 @@ CREATE TABLE IF NOT EXISTS invoice_items (
     engagement_id uuid NOT NULL REFERENCES engagements(id) ON DELETE RESTRICT,
     description text,
     amount integer NOT NULL CHECK (amount >= 0),
+    payment_terms text,
+    payment_percent numeric(5,2) CHECK (payment_percent IS NULL OR (payment_percent >= 0 AND payment_percent <= 100)),
     created_at timestamptz NOT NULL DEFAULT now(),
     CONSTRAINT invoice_items_invoice_engagement_unique UNIQUE (invoice_id, engagement_id)
 );
