@@ -565,8 +565,8 @@ export default function Invoices() {
         : `<strong>${escapeHtml(coreLabel)}</strong>`;
       const coreRow = coreLabel
         ? `<tr class="core-label-row">
-            <td colspan="2"><span class="core-label">Harga Coret</span> ${coreValue}</td>
-            <td class="right">${isFree ? '<span class="core-tag">Subscriber</span>' : ''}</td>
+            <td colspan="2">${coreValue}</td>
+            <td class="right">${isFree ? '<span class="core-tag">FREE</span>' : ''}</td>
           </tr>`
         : '';
       return `<tr>
@@ -742,7 +742,7 @@ td { border-bottom: 1px solid #e5e7eb; padding: 11px 8px; vertical-align: top; }
                   const valueHtml = hasPrice
                     ? `<span class="core-strike">${escapeHtml(coreLabel)}</span>`
                     : `<strong>${escapeHtml(coreLabel)}</strong>`;
-                  return `<p class="small" style="margin-top:8px"><span class="core-label">Harga Coret</span> ${valueHtml}${isFreeText ? ' &middot; <span class="core-tag">Subscribers</span>' : ''}</p>`;
+                  return `<p class="small" style="margin-top:8px">${valueHtml}${isFreeText ? ' &middot; <span class="core-tag">FREE</span>' : ''}</p>`;
                 })()}
             </div>
               <div class="box balance">
@@ -792,7 +792,7 @@ td { border-bottom: 1px solid #e5e7eb; padding: 11px 8px; vertical-align: top; }
               <div class="box">
                  <h2>Instruksi Pembayaran</h2>
                 <p><strong>${escapeHtml(bankName)}</strong></p>
-                 <p>Nomor Rekening: ${escapeHtml(bankAccountNumber)}<br/>Atas Nama: ${escapeHtml(bankAccountHolder)}</p>
+                 <p>Nomor Rekening: <strong>${escapeHtml(bankAccountNumber)}</strong><br/>Atas Nama: <strong>${escapeHtml(bankAccountHolder)}</strong></p>
               </div>
             </section>
 
