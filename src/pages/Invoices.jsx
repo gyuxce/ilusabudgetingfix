@@ -558,10 +558,15 @@ export default function Invoices() {
       const itemServiceName = item.description || item.engagement?.service?.name || 'Layanan';
       const itemPeriod = formatPeriod(invoice.period_month);
       const coreLabel = item.engagement?.list_price_label || (invoiceItems.length <= 1 && invoice.engagement?.list_price_label) || '';
+      const isFree = coreLabel.trim().toUpperCase() === 'FREE';
+      const hasPrice = /\d/.test(coreLabel);
+      const coreValue = hasPrice
+        ? `<span class="core-strike">${escapeHtml(coreLabel)}</span>`
+        : `<strong>${escapeHtml(coreLabel)}</strong>`;
       const coreRow = coreLabel
         ? `<tr class="core-label-row">
-            <td colspan="2"><span class="core-label">Harga Core:</span> <strong>${escapeHtml(coreLabel)}</strong></td>
-            <td class="right"><span class="core-tag">${escapeHtml(coreLabel.trim().toUpperCase()) === 'FREE' ? 'Subscriber' : ''}</span></td>
+            <td colspan="2"><span class="core-label">Harga Coret</span> ${coreValue}</td>
+            <td class="right">${isFree ? '<span class="core-tag">Subscriber</span>' : ''}</td>
           </tr>`
         : '';
       return `<tr>
@@ -665,6 +670,7 @@ td { border-bottom: 1px solid #e5e7eb; padding: 11px 8px; vertical-align: top; }
 .right { text-align: right; }
 .core-label-row { background: #f9fafb; }
 .core-label-row td { padding: 6px 8px; border-bottom: 1px solid #f1f5f9; font-size: 11px; color: #4b5563; }
+.core-strike { text-decoration: line-through; color: #94a3b8; font-weight: 600; }
 .core-label { color: #9ca3af; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 600; }
 .core-tag { display: inline-block; padding: 2px 8px; border-radius: 999px; background: #ecfdf5; color: #047857; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; }
             .total {
@@ -732,7 +738,11 @@ td { border-bottom: 1px solid #e5e7eb; padding: 11px 8px; vertical-align: top; }
                     || '';
                   if (!coreLabel) return '';
                   const isFreeText = coreLabel.trim().toUpperCase() === 'FREE';
-                  return `<p class="small" style="margin-top:8px"><span class="core-label">Harga Core</span> <strong>${escapeHtml(coreLabel)}</strong>${isFreeText ? ' &middot; <span class="core-tag">Subscribers</span>' : ''}</p>`;
+                  const hasPrice = /\d/.test(coreLabel);
+                  const valueHtml = hasPrice
+                    ? `<span class="core-strike">${escapeHtml(coreLabel)}</span>`
+                    : `<strong>${escapeHtml(coreLabel)}</strong>`;
+                  return `<p class="small" style="margin-top:8px"><span class="core-label">Harga Coret</span> ${valueHtml}${isFreeText ? ' &middot; <span class="core-tag">Subscribers</span>' : ''}</p>`;
                 })()}
             </div>
               <div class="box balance">

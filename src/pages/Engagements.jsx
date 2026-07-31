@@ -228,7 +228,13 @@ export default function Engagements() {
       ) : '—'
     )},
     { key: 'fee', label: 'Nilai/Bulan', render: (row) => row.service_fee_per_month > 0 ? `Rp ${formatCurrency(row.service_fee_per_month)}` : '—' },
-    { key: 'list_price', label: 'Harga Core', render: (row) => row.list_price_label ? <span className="text-gray-600">{row.list_price_label}</span> : <span className="text-gray-400">—</span> },
+    { key: 'list_price', label: 'Harga Coret', render: (row) => {
+      if (!row.list_price_label) return <span className="text-gray-400">—</span>;
+      const isFree = row.list_price_label.trim().toUpperCase() === 'FREE';
+      if (isFree) return <span className="text-emerald-600 font-semibold">FREE</span>;
+      if (/\d/.test(row.list_price_label)) return <span className="line-through text-gray-400">{row.list_price_label}</span>;
+      return <span className="text-gray-600">{row.list_price_label}</span>;
+    } },
     { key: 'start', label: 'Mulai', render: (row) => row.start_date ? format(new Date(row.start_date), 'dd MMM yyyy') : '—' },
     { key: 'status', label: 'Status', render: (row) => {
       if (row.status === 'ongoing') return <Badge variant="success">Berjalan</Badge>;
@@ -426,13 +432,13 @@ export default function Engagements() {
                 onChange={e => setFormData({ ...formData, service_fee_per_month: e.target.value })}
               />
               <Input
-                label="Harga Core (opsional)"
-                placeholder="Misal: FREE, Rp 2.500.000, atau See contract"
+                label="Harga Coret (opsional)"
+                placeholder="Misal: Rp 2.500.000 (akan tampil dicoret) atau FREE"
                 maxLength={60}
                 value={formData.list_price_label}
                 onChange={e => setFormData({ ...formData, list_price_label: e.target.value })}
               />
-              <p className="-mt-2 text-xs text-gray-500">Tampil di invoice sebagai nilai/relationship value. Tidak mengubah nominal ditagih.</p>
+              <p className="-mt-2 text-xs text-gray-500">Harga list yang dicoret di invoice PDF. Nominal ditagih tetap dari Nilai per Bulan. Isi <span className="font-semibold text-emerald-600">FREE</span> untuk model subscriber.</p>
             </>
           ) : (
             <div className="w-full">
@@ -465,11 +471,11 @@ export default function Engagements() {
                           }))}
                         />
                       )}
-                      {checked && (
+{checked && (
                         <Input
                           className="mt-2"
-                          label="Harga Core (opsional)"
-                          placeholder="Misal: FREE, Rp 2.500.000"
+                          label="Harga Coret (opsional)"
+                          placeholder="Misal: Rp 2.500.000 (dicoret) atau FREE"
                           maxLength={60}
                           value={formData.list_price_labels[service.id] ?? ''}
                           onChange={(event) => setFormData((previous) => ({
