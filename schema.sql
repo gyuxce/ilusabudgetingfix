@@ -74,6 +74,7 @@ CREATE TABLE IF NOT EXISTS invoices (
     due_date date NOT NULL,
     paid_date date,
     status text NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'approved', 'sent', 'paid')),
+    payment_terms text,
     notes text,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now()

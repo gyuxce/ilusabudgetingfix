@@ -127,6 +127,7 @@ export default function Invoices() {
     issue_date: defaultIssueDate,
     due_date: defaultDueDate,
     status: 'draft',
+    payment_terms: '',
     notes: ''
   });
   const [formError, setFormError] = useState('');
@@ -241,6 +242,7 @@ export default function Invoices() {
       issue_date: defaultIssueDate,
       due_date: defaultDueDate,
       status: 'draft',
+      payment_terms: '',
       notes: ''
     });
     setFormError('');
@@ -262,6 +264,7 @@ export default function Invoices() {
       issue_date: inv.issue_date || defaultIssueDate,
       due_date: inv.due_date || defaultDueDate,
       status: (inv.status === 'paid' ? 'sent' : (inv.status || 'draft')),
+      payment_terms: inv.payment_terms || '',
       notes: inv.notes || ''
     });
     setFormError('');
@@ -353,6 +356,7 @@ export default function Invoices() {
           issue_date: formData.issue_date,
           due_date: formData.due_date,
           status: formData.status,
+          payment_terms: (formData.payment_terms || '').trim() || null,
           notes: formData.notes.trim() || null,
         };
         await updateInvoice.mutateAsync({ id: editingInvoice.id, ...payload });
@@ -367,6 +371,7 @@ export default function Invoices() {
           issue_date: formData.issue_date,
           due_date: formData.due_date,
           status: formData.status,
+          payment_terms: (formData.payment_terms || '').trim() || null,
           paid_date: null,
           notes: formData.notes.trim() || null,
           invoice_items: selectedEngagementIds.length > 1
@@ -560,13 +565,15 @@ export default function Invoices() {
       const coreLabel = item.engagement?.list_price_label || (invoiceItems.length <= 1 && invoice.engagement?.list_price_label) || '';
       const isFree = coreLabel.trim().toUpperCase() === 'FREE';
       const hasPrice = /\d/.test(coreLabel);
-      const coreValue = hasPrice
-        ? `<span class="core-strike">${escapeHtml(coreLabel)}</span>`
-        : `<strong>${escapeHtml(coreLabel)}</strong>`;
+      const coreValue = isFree
+        ? `<strong>FREE</strong>`
+        : hasPrice
+          ? `<span class="core-strike">${escapeHtml(coreLabel)}</span>`
+          : `<strong>${escapeHtml(coreLabel)}</strong>`;
       const coreRow = coreLabel
         ? `<tr class="core-label-row">
             <td colspan="2">${coreValue}</td>
-            <td class="right">${isFree ? '<span class="core-tag">FREE</span>' : ''}</td>
+            <td class="right">${isFree ? '<span class="core-tag">Subscriber</span>' : ''}</td>
           </tr>`
         : '';
       return `<tr>
@@ -739,15 +746,18 @@ td { border-bottom: 1px solid #e5e7eb; padding: 11px 8px; vertical-align: top; }
                   if (!coreLabel) return '';
                   const isFreeText = coreLabel.trim().toUpperCase() === 'FREE';
                   const hasPrice = /\d/.test(coreLabel);
-                  const valueHtml = hasPrice
-                    ? `<span class="core-strike">${escapeHtml(coreLabel)}</span>`
-                    : `<strong>${escapeHtml(coreLabel)}</strong>`;
-                  return `<p class="small" style="margin-top:8px">${valueHtml}${isFreeText ? ' &middot; <span class="core-tag">FREE</span>' : ''}</p>`;
+                  const valueHtml = isFreeText
+                    ? `<strong>FREE</strong>`
+                    : hasPrice
+                      ? `<span class="core-strike">${escapeHtml(coreLabel)}</span>`
+                      : `<strong>${escapeHtml(coreLabel)}</strong>`;
+                  return `<p class="small" style="margin-top:8px">${valueHtml}${isFreeText ? ' &middot; <span class="core-tag">Subscriber</span>' : ''}</p>`;
                 })()}
             </div>
-              <div class="box balance">
-                 <h2>Total Tagihan</h2>
+<div class="box balance">
+                <h2>Total Tagihan</h2>
                 <strong>Rp ${formatCurrency(balance)}</strong>
+                ${invoice.payment_terms ? `<p class="small" style="margin-top:4px"><strong style="color:#111827">Pembayaran:</strong> ${escapeHtml(invoice.payment_terms)}</p>` : ''}
                 <p class="small muted">${escapeHtml(dueCopy)}</p>
               </div>
             </section>
@@ -1308,7 +1318,7 @@ td { border-bottom: 1px solid #e5e7eb; padding: 11px 8px; vertical-align: top; }
 
           <div className="grid gap-4 grid-cols-1">
             <div>
-              <Select 
+              <Select
                 label="Status Invoice *"
                 required
                 value={formData.status}
@@ -1323,7 +1333,29 @@ td { border-bottom: 1px solid #e5e7eb; padding: 11px 8px; vertical-align: top; }
             </div>
           </div>
 
-          <Textarea 
+          <div>
+            <Input
+              label="Term / Pembayaran (opsional)"
+              placeholder="Misal: Term 1 / DP 50%, atau Lunas"
+              value={formData.payment_terms}
+              onChange={e => setFormData({...formData, payment_terms: e.target.value})}
+            />
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {['Term 1 / DP 50%', 'Term 2 / Pelunasan 50%', 'Lunas', 'DP 30%'].map(preset => (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => setFormData({...formData, payment_terms: preset})}
+                  className="rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-[11px] text-gray-700 transition-colors hover:border-gray-950 hover:bg-gray-900 hover:text-white"
+                >
+                  {preset}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-gray-500 mt-1.5">Tampil di PDF invoice. Klik preset atau ketik sendiri.</p>
+          </div>
+
+          <Textarea
             label="Catatan"
             value={formData.notes}
             onChange={e => setFormData({...formData, notes: e.target.value})}

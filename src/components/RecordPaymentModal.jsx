@@ -15,13 +15,6 @@ export function RecordPaymentModal({ open, onClose, invoice, onSuccess }) {
   const totalPaid = invoice?.total_paid || 0;
   const amount = invoice?.amount || 0;
 
-  const suggestTermLabel = (inv) => {
-    const existingCount = inv?.payment_count || 0;
-    const termNumber = existingCount + 1;
-    if (existingCount === 0) return 'Term 1 / DP';
-    return `Term ${termNumber}`;
-  };
-
   const [formData, setFormData] = useState({
     amount: balance,
     payment_date: format(new Date(), 'yyyy-MM-dd'),
@@ -36,7 +29,7 @@ export function RecordPaymentModal({ open, onClose, invoice, onSuccess }) {
         amount: invoice.balance,
         payment_date: format(new Date(), 'yyyy-MM-dd'),
         payment_method: '',
-        notes: suggestTermLabel(invoice)
+        notes: ''
       });
       setFormError('');
     }
@@ -45,7 +38,6 @@ export function RecordPaymentModal({ open, onClose, invoice, onSuccess }) {
   if (!invoice) return null;
 
   const formatCurrency = (val) => new Intl.NumberFormat('id-ID').format(val || 0);
-  const termNumber = (invoice.payment_count || 0) + 1;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -90,14 +82,9 @@ export function RecordPaymentModal({ open, onClose, invoice, onSuccess }) {
       }
     >
       <div className="mb-4">
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-sm text-gray-500 font-medium">
-            {invoice.engagement?.client?.company_name} — Invoice for {formatPeriod(invoice.period_month)}
-          </p>
-          <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-700">
-            Pembayaran ke-{termNumber}
-          </span>
-        </div>
+        <p className="text-sm text-gray-500 font-medium">
+          {invoice.engagement?.client?.company_name} — Invoice for {formatPeriod(invoice.period_month)}
+        </p>
       </div>
 
       <div className="bg-gray-50 border border-gray-200 rounded p-3 mb-6 grid gap-1 text-sm">
@@ -150,11 +137,10 @@ export function RecordPaymentModal({ open, onClose, invoice, onSuccess }) {
 
 <Textarea
           label="Catatan"
-          placeholder="Contoh: Term 2 / Pelunasan, via Mandiri"
+          placeholder="Contoh: Term 1 / DP 50%, Term 2 / Pelunasan, via Mandiri"
           value={formData.notes}
           onChange={e => setFormData({...formData, notes: e.target.value})}
         />
-        <p className="-mt-2 text-xs text-gray-500">Label termin otomatis terisi. Bisa diedit sesuai catatan client.</p>
       </form>
     </Modal>
   );
